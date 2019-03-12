@@ -4,8 +4,13 @@ module Tokeniser where
 
 import Model
 
+
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString.Char8
+import qualified Data.ByteString.Char8 as BS
+
+
+import Prelude hiding (takeWhile)
 
 take1Space :: Parser ()
 take1Space =    
@@ -72,13 +77,25 @@ parseSymbol =
     )
 
 parseIntegerConstant :: Parser IntegerConstant
-parseIntegerConstant = undefined
+parseIntegerConstant = decimal
 
 parseStringConstant :: Parser StringConstant
-parseStringConstant = undefined
+parseStringConstant =
+        char '\"'
+    >>  takeWhile1 (notInClass "\"\n")
+    <*  char '\"'
 
 parseIdentifier :: Parser Identifier
-parseIdentifier = undefined
+parseIdentifier = do
+    firstLetter <- satisfy (inClass "a-zA-Z_")
+    rest <- takeWhile (inClass "0-9a-zA-Z_")
+    return (BS.cons firstLetter rest)
 
 parseToken :: Parser Token
-parseToken = undefined
+parseToken =
+        (KW <$> parseKeyword)
+    <|> (SY <$> parseSymbol)
+    <|> (IC <$> parseIntegerConstant)
+    <|> (SC <$> parseStringConstant)
+    <|> (ID <$> parseIdentifier)
+    

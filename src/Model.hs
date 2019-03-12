@@ -1,5 +1,8 @@
 module Model where
 
+import qualified Data.ByteString.Char8 as BS
+
+
 data Keyword =
     Class
   | Constructor
@@ -22,6 +25,7 @@ data Keyword =
   | Else
   | While
   | Return
+  deriving (Eq, Show)
 
 data Symbol =
     LCurlyBracket
@@ -43,10 +47,11 @@ data Symbol =
   | RAngleBracket
   | Equal
   | Tilde
+  deriving (Eq, Show)
 
 type IntegerConstant = Integer
-type StringConstant = String
-type Identifier = String
+type StringConstant = BS.ByteString
+type Identifier = BS.ByteString
 
 data Token =
     KW Keyword
@@ -54,3 +59,4 @@ data Token =
   | IC IntegerConstant
   | SC StringConstant
   | ID Identifier
+  deriving (Eq, Show)
