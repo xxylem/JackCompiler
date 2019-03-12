@@ -4,7 +4,6 @@ module Tokeniser where
 
 import Model
 
-
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as BS
@@ -27,34 +26,33 @@ take1Space =
 parseKeyword :: Parser Keyword
 parseKeyword =
     (
-        (string "class" >> return Class)
-    <|> (string "constructor" >> return Constructor)
-    <|> (string "function"   >> return Function)
-    <|> (string "method" >> return Method)
-    <|> (string "field" >> return Field)
-    <|> (string "static" >> return Static)
-    <|> (string "var" >> return Var)
-    <|> (string "int" >> return Int)
-    <|> (string "char" >> return Char)
-    <|> (string "boolean" >> return Boolean)
-    <|> (string "void" >> return Void)
-    <|> (string "true" >> return TrueKW)
-    <|> (string "false" >> return FalseKW)
-    <|> (string "null" >> return Null)
-    <|> (string "this" >> return This)
-    <|> (string "let" >> return Let)
-    <|> (string "do" >> return Do)
-    <|> (string "if" >> return If)
-    <|> (string "else" >> return Else)
-    <|> (string "while" >> return While)
-    <|> (string "return" >> return Return)
+        (string "class"         >> return Class)
+    <|> (string "constructor"   >> return Constructor)
+    <|> (string "function"      >> return Function)
+    <|> (string "method"        >> return Method)
+    <|> (string "field"         >> return Field)
+    <|> (string "static"        >> return Static)
+    <|> (string "var"           >> return Var)
+    <|> (string "int"           >> return Int)
+    <|> (string "char"          >> return Char)
+    <|> (string "boolean"       >> return Boolean)
+    <|> (string "void"          >> return Void)
+    <|> (string "true"          >> return TrueKW)
+    <|> (string "false"         >> return FalseKW)
+    <|> (string "null"          >> return Null)
+    <|> (string "this"          >> return This)
+    <|> (string "let"           >> return Let)
+    <|> (string "do"            >> return Do)
+    <|> (string "if"            >> return If)
+    <|> (string "else"          >> return Else)
+    <|> (string "while"         >> return While)
+    <|> (string "return"        >> return Return)
     )
     <* take1Space
 
 
 parseSymbol :: Parser Symbol
 parseSymbol =
-    (
         (char '{' >> return LCurlyBracket)
     <|> (char '}' >> return RCurlyBracket)
     <|> (char '(' >> return LParen)
@@ -74,7 +72,6 @@ parseSymbol =
     <|> (char '>' >> return RAngleBracket)
     <|> (char '=' >> return Equal)
     <|> (char '~' >> return Tilde)
-    )
 
 parseIntegerConstant :: Parser IntegerConstant
 parseIntegerConstant = decimal
@@ -87,8 +84,8 @@ parseStringConstant =
 
 parseIdentifier :: Parser Identifier
 parseIdentifier = do
-    firstLetter <- satisfy (inClass "a-zA-Z_")
-    rest <- takeWhile (inClass "0-9a-zA-Z_")
+    firstLetter <-  satisfy (inClass "a-zA-Z_")
+    rest        <-  takeWhile (inClass "0-9a-zA-Z_")
     return (BS.cons firstLetter rest)
 
 parseToken :: Parser Token
