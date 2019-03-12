@@ -12,8 +12,8 @@ data Keyword =
   | Char
   | Boolean
   | Void
-  | True
-  | False
+  | TrueKW
+  | FalseKW
   | Null
   | This
   | Let
