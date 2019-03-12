@@ -47,3 +47,10 @@ data Symbol =
 type IntegerConstant = Integer
 type StringConstant = String
 type Identifier = String
+
+data Token =
+    KW Keyword
+  | SY Symbol
+  | IC IntegerConstant
+  | SC StringConstant
+  | ID Identifier
