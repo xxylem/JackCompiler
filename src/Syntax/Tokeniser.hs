@@ -88,9 +88,40 @@ parseIdentifier = do
     rest        <-  takeWhile (inClass "0-9a-zA-Z_")
     return (BS.cons firstLetter rest)
 
+
+skipLineComment :: Parser ()
+skipLineComment =
+        string "//"
+    *>  manyTill anyChar (char '\n')
+    *>  return ()
+
+skipAPIComment :: Parser ()
+skipAPIComment =
+        string "/**"
+    *>  manyTill anyChar (string "*/")
+    *>  return ()
+
+skipBlockComment :: Parser ()
+skipBlockComment =
+        string "/*"
+    *>  manyTill anyChar (string "*/")
+    *>  return ()
+
+skipComment :: Parser ()
+skipComment =
+        skipLineComment
+    <|> skipAPIComment
+    <|> skipBlockComment
+
+skipComments :: Parser ()
+skipComments =
+    skipMany (skipSpace >> skipComment >> skipSpace)
+
+
 parseToken :: Parser Token
 parseToken =
         skipSpace
+    *>  skipComments
     *>
     (       (KW <$> parseKeyword)
         <|> (SY <$> parseSymbol)
@@ -99,4 +130,11 @@ parseToken =
         <|> (ID <$> parseIdentifier)
     )
     <*  skipSpace
+    <*  skipComments
     
+
+parseTokens :: Parser [Token]
+parseTokens = manyTill parseToken endOfInput
+
+runParseTokens :: BS.ByteString -> Either String [Token]
+runParseTokens = parseOnly parseTokens
