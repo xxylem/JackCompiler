@@ -1,7 +1,7 @@
 module Main where
 
-import Model
-import Tokeniser
+import Data.Model
+import Syntax.Tokeniser
 
 
 main :: IO ()

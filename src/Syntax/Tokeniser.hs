@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Tokeniser where
+module Syntax.Tokeniser where
 
-import Model
+import Data.Model
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString.Char8
@@ -90,9 +90,13 @@ parseIdentifier = do
 
 parseToken :: Parser Token
 parseToken =
-        (KW <$> parseKeyword)
-    <|> (SY <$> parseSymbol)
-    <|> (IC <$> parseIntegerConstant)
-    <|> (SC <$> parseStringConstant)
-    <|> (ID <$> parseIdentifier)
+        skipSpace
+    *>
+    (       (KW <$> parseKeyword)
+        <|> (SY <$> parseSymbol)
+        <|> (IC <$> parseIntegerConstant)
+        <|> (SC <$> parseStringConstant)
+        <|> (ID <$> parseIdentifier)
+    )
+    <*  skipSpace
     

@@ -18,8 +18,9 @@ cabal-version:       >=1.10
 executable JackCompiler
   main-is:             Main.hs
   ghc-options:         -Wall -fwarn-tabs
-  other-modules:       Tokeniser
-                     , Model
+  other-modules:       Syntax.Tokeniser
+                     , Data.Model
+                     , Syntax.Parser
   -- other-extensions:
   build-depends:       base >=4.11 && <4.12
                      , attoparsec >= 0.13 && < 1.0

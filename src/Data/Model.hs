@@ -1,4 +1,4 @@
-module Model where
+module Data.Model where
 
 import qualified Data.ByteString.Char8 as BS
 
