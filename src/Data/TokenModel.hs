@@ -59,3 +59,6 @@ data Token =
   | SC StringConstant
   | ID Identifier
   deriving (Eq, Show)
+
+type JackFile = BS.ByteString
+type TokenisedJackFile = [Token]

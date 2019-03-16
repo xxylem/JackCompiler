@@ -137,5 +137,12 @@ parseToken =
 parseTokens :: Parser [Token]
 parseTokens = manyTill parseToken endOfInput
 
-runParseTokens :: BS.ByteString -> Either String [Token]
-runParseTokens = parseOnly parseTokens
+tokeniseJackFile :: JackFile -> Either String TokenisedJackFile
+tokeniseJackFile = parseOnly parseTokens
+
+tokeniseJackFiles :: [JackFile] -> [TokenisedJackFile]
+tokeniseJackFiles [] = []
+tokeniseJackFiles (f:fs) =
+    case tokeniseJackFile f of
+        Right parsedFile -> parsedFile : tokeniseJackFiles fs
+        Left  _          -> tokeniseJackFiles fs
