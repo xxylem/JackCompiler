@@ -19,7 +19,8 @@ executable JackCompiler
   main-is:             Main.hs
   ghc-options:         -Wall -fwarn-tabs
   other-modules:       Syntax.Tokeniser
-                     , Data.Model
+                     , Data.AnalyserModel
+                     , Data.TokenModel
                      , Syntax.Parser
   -- other-extensions:
   build-depends:       base >=4.11 && <4.12

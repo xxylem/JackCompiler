@@ -2,7 +2,8 @@
 
 module Main where
 
-import Data.Model
+import Data.AnalyserModel
+import Data.TokenModel
 import Syntax.Tokeniser
 
 import qualified Data.ByteString.Char8 as BS

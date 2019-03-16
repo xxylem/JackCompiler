@@ -2,7 +2,8 @@
 
 module Syntax.Tokeniser where
 
-import Data.Model
+
+import Data.TokenModel
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString.Char8

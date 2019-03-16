@@ -1,7 +1,6 @@
-module Data.Model where
+module Data.TokenModel where
 
 import qualified Data.ByteString.Char8 as BS
-
 
 data Keyword =
     Class
