@@ -12,7 +12,20 @@ runTestExpectSuccess p ts =
     let Just (res, _) = p ts in
         res
 
-
+parenExpressionTkns1 :: [Token]
+parenExpressionTkns1 =
+    [   SY LParen
+    ,   IC 10
+    ,   SY Minus
+    ,   IC 100
+    ,   SY RParen
+    ]
+parenExpressionRes1 :: Term
+parenExpressionRes1 =
+    TParenExpression
+        (ETermOpTerm (TIntegerConstant 10)
+                     OpMinus
+                     (TIntegerConstant 100))
 
 expressionListSingleExpTkns1 :: [Token]
 expressionListSingleExpTkns1 =
@@ -56,6 +69,12 @@ expressionListResult2 =
 main :: IO ()
 main = hspec $ do
     describe "Parser Test Suite" $ do
+
+        describe "parseParenExpression Suite" $ do
+
+            it "parseParenExpression handles TermOpTerm" $ do
+                runTestExpectSuccess parseParenExpression parenExpressionTkns1
+                    `shouldBe` parenExpressionRes1
         
         describe "parseExpressionList Suite" $ do
 
