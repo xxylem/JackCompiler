@@ -86,29 +86,15 @@ parseVarNameTerm ts = case parseVarName ts of
     Just (varName, ts) -> Just (TVarName varName, ts)
     Nothing            -> Nothing
 
-parseLSquareBracket :: TokenParser ()
-parseLSquareBracket [] = Nothing
-parseLSquareBracket (t:ts) =
-    case t of
-        (SY LSquareBracket) -> Just ((), ts)
-        _                   -> Nothing
-
-parseRSquareBracket :: TokenParser ()
-parseRSquareBracket [] = Nothing
-parseRSquareBracket (t:ts) =
-    case t of
-        (SY RSquareBracket) -> Just ((), ts)
-        _                   -> Nothing
-
 parseEArrayExp :: TokenParser EArrayExp --todo create state, maybe monad comb.
 parseEArrayExp ts = 
         parseVarName ts
     >>= \(varName, ts)
-    ->  parseLSquareBracket ts
+    ->  skipLSquareBracket ts
     >>= \(_, ts)
     ->  parseExpression ts
     >>= \(expr, ts)
-    ->  parseRSquareBracket ts
+    ->  skipRSquareBracket ts
     >>= \(_, ts)
     ->  return (EArrayExp varName expr, ts)
 
@@ -117,20 +103,6 @@ parseArrayExpTerm ts =
     case parseEArrayExp ts of
         Just (res, ts) -> Just (TArrayExp res, ts)
         Nothing        -> Nothing
-
-parseLParen :: TokenParser ()
-parseLParen [] = Nothing
-parseLParen (t:ts) =
-    case t of
-        (SY LParen) -> Just ((), ts)
-        _           -> Nothing
-
-parseRParen :: TokenParser ()
-parseRParen [] = Nothing
-parseRParen (t:ts) =
-    case t of
-        (SY RParen) -> Just ((), ts)
-        _           -> Nothing
 
 parseSubroutineName :: TokenParser SubroutineName
 parseSubroutineName [] = Nothing
@@ -150,34 +122,29 @@ parseSubroutineCallSimple :: TokenParser SubroutineCall
 parseSubroutineCallSimple ts =
         parseSubroutineName ts
     >>= \(subName, ts)
-    ->  parseLParen ts
+    ->  skipLParen ts
     >>= \(_, ts)
     ->  parseExpressionList ts
     >>= \(exprs, ts)
-    ->  parseRParen ts
+    ->  skipRParen ts
     >>= \(_, ts)
     ->  return (SR subName exprs, ts)
 
-parseFullStop :: TokenParser ()
-parseFullStop [] = Nothing
-parseFullStop (t:ts) =
-    case t of
-        (SY FullStop) -> Just ((), ts)
-        _             -> Nothing
+
 
 parseSubroutineCallClass :: TokenParser SubroutineCall
 parseSubroutineCallClass ts =
         parseClassName ts
     >>= \(className, ts)
-    ->  parseFullStop ts
+    ->  skipFullStop ts
     >>= \(_, ts)
     ->  parseSubroutineName ts
     >>= \(subName, ts)
-    ->  parseLParen ts
+    ->  skipLParen ts
     >>= \(_, ts)
     ->  parseExpressionList ts
     >>= \(exprs, ts)
-    ->  parseRParen ts
+    ->  skipRParen ts
     >>= \(_, ts)
     ->  return (SRCN className subName exprs, ts) -- todo use parseSubroutineSimple
 
@@ -185,15 +152,15 @@ parseSubroutineCallVar :: TokenParser SubroutineCall
 parseSubroutineCallVar ts =
     parseVarName ts
     >>= \(varName, ts)
-    ->  parseFullStop ts
+    ->  skipFullStop ts
     >>= \(_, ts)
     ->  parseSubroutineName ts
     >>= \(subName, ts)
-    ->  parseLParen ts
+    ->  skipLParen ts
     >>= \(_, ts)
     ->  parseExpressionList ts
     >>= \(exprs, ts)
-    ->  parseRParen ts
+    ->  skipRParen ts
     >>= \(_, ts)
     ->  return (SRVN varName subName exprs, ts) -- todo use parseSubroutineSimple
 
@@ -216,25 +183,18 @@ parseSubroutineCallTerm ts =
 
 parseParenExpression :: TokenParser Term
 parseParenExpression ts =
-        parseLParen ts
+        skipLParen ts
     >>= \(_, ts)
     ->  parseExpression ts
     >>= \(expr, ts)
-    ->  parseRParen ts
+    ->  skipRParen ts
     >>= \(_, ts)
     ->  return (TParenExpression expr, ts)
-
-parseComma :: TokenParser ()
-parseComma [] = Nothing
-parseComma (t:ts) =
-    case t of
-        (SY Comma) -> Just ((), ts)
-        _          -> Nothing
 
 parseExpressionOption :: TokenParser Expression
 parseExpressionOption [] = Nothing
 parseExpressionOption ts =
-    case parseComma ts of
+    case skipComma ts of
         Just (_, ts) -> parseExpression ts
         Nothing      -> Nothing
 
@@ -285,3 +245,37 @@ parseUnaryOpTerm ts =
     ->  parseTerm ts
     >>= \(term, ts)
     ->  return (TUnaryOp uop term, ts)
+
+-- ======================= --
+-- PARSERS TO SKIP SYMBOLS --
+-- ======================= --
+
+skipToken :: Token -> TokenParser ()
+skipToken _ [] = Nothing
+skipToken tkn (t:ts) =
+    if tkn == t then Just ((), ts)
+                else Nothing
+
+skipComma :: TokenParser ()
+skipComma =
+    skipComma (SY Comma)
+
+skipFullStop :: TokenParser ()
+skipFullStop =
+    skipToken (SY FullStop)
+
+skipLParen :: TokenParser ()
+skipLParen =
+    skipToken (SY LParen)
+
+skipRParen :: TokenParser ()
+skipRParen =
+    skipToken (SY RParen)
+
+skipLSquareBracket :: TokenParser ()
+skipLSquareBracket =
+    skipToken (SY LSquareBracket)
+
+skipRSquareBracket :: TokenParser ()
+skipRSquareBracket =
+    skipToken (SY RSquareBracket)
