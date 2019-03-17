@@ -11,6 +11,7 @@ type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
 
+   
 parseJackType :: TokenParser JackType
 parseJackType ts =
         (   skipIntKw ts
@@ -25,7 +26,86 @@ parseJackType ts =
     <|> (   parseClassName ts
         >>= \(className, ts)
         ->  return (ClassType className, ts))
-    
+
+parseSubroutineDec :: TokenParser SubroutineDec
+parseSubroutineDec ts =
+        parseSubroutineKind ts
+    >>= \(srKind, ts)
+    ->  parseSubroutineType ts
+    >>= \(srType, ts)
+    ->  parseSubroutineName ts
+    >>= \(srName, ts)
+    ->  parseParameters ts
+    >>= \(params, ts)
+    ->  parseSubroutineBody ts
+    >>= \(body, ts)
+    ->  return (SubroutineDec srKind
+                              srType
+                              srName
+                              params
+                              body,  ts)
+
+parseSubroutineKind :: TokenParser SubroutineKind
+parseSubroutineKind ts =
+        (   skipConstructor ts
+        >>= \(_, ts)
+        ->  return (SRConstructor, ts))
+    <|> (   skipFunction ts
+        >>= \(_, ts)
+        ->  return (SRFunction, ts))
+    <|> (   skipMethod ts
+        >>= \(_, ts)
+        ->  return (SRMethod, ts))
+
+parseSubroutineType :: TokenParser SubroutineType
+parseSubroutineType ts =
+        (   skipVoid ts
+        >>= \(_, ts)
+        ->  return (VoidType, ts))
+    <|> (case parseJackType ts of
+            Just (jType, ts) -> Just (SRType jType, ts)
+            Nothing          -> Nothing)
+
+parseParameters :: TokenParser [Parameter]
+parseParameters ts =
+        parseFirstParameter ts
+    >>= \(prm, ts)
+    ->  parseTailParameters ts
+    >>= \(prms, ts)
+    ->  return (prm:prms, ts)
+
+parseTailParameters :: TokenParser [Parameter]
+parseTailParameters ts =
+    case parseTailParameter ts of
+        Just (prm, ts) -> case parseTailParameters ts of
+                            Just (prms, ts') -> Just (prm:prms, ts')
+                            Nothing          -> Just ([prm], ts)
+        Nothing        -> Just ([], ts)
+
+parseTailParameter :: TokenParser Parameter
+parseTailParameter ts =
+        skipComma ts
+    >>= \(_, ts)
+    ->  parseFirstParameter ts
+
+parseFirstParameter :: TokenParser Parameter
+parseFirstParameter ts =
+        parseJackType ts
+    >>= \(jackType, ts)
+    ->  parseVarName ts
+    >>= \(varName, ts)
+    ->  return (Param jackType varName, ts)
+
+parseSubroutineBody :: TokenParser SubroutineBody
+parseSubroutineBody ts =
+        skipLCurlyBracket ts
+    >>= \(_, ts)
+    ->  parseVarDecs ts
+    >>= \(varDecs, ts)
+    ->  parseStatements ts
+    >>= \(stmts, ts)
+    ->  return (SubroutineBody varDecs stmts, ts)
+
 parseVarNameListOption :: TokenParser VarName
 parseVarNameListOption ts =
         skipComma ts
@@ -47,6 +127,14 @@ parseVarNameList ts =
     ->  parseVarNameListOptions ts
     >>= \(names, ts)
     ->  return (name:names, ts)
+
+parseVarDecs :: TokenParser [VarDec]
+parseVarDecs ts =
+        case parseVarDec ts of
+            Just (varDec, ts) -> case parseVarDecs ts of
+                                    Just (varDecs, ts') -> Just (varDec:varDecs, ts')
+                                    Nothing             -> Just ([varDec], ts)
+            Nothing           -> Just ([], ts)
 
 parseVarDec :: TokenParser VarDec
 parseVarDec ts =
@@ -415,6 +503,22 @@ skipToken _ [] = Nothing
 skipToken tkn (t:ts) =
     if tkn == t then Just ((), ts)
                 else Nothing
+
+skipVoid :: TokenParser ()
+skipVoid =
+    skipToken (KW Void)
+
+skipFunction :: TokenParser ()
+skipFunction =
+    skipToken (KW Function)
+
+skipConstructor :: TokenParser ()
+skipConstructor =
+    skipToken (KW Constructor)
+
+skipMethod :: TokenParser ()
+skipMethod =
+    skipToken (KW Method)
 
 skipIntKw :: TokenParser ()
 skipIntKw =

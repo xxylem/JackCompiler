@@ -2,6 +2,28 @@ module Data.AnalyserModel where
 
 import qualified Data.ByteString.Char8 as BS
 
+data SubroutineDec =
+    SubroutineDec   SubroutineKind
+                    SubroutineType
+                    SubroutineName
+                    [Parameter]
+                    SubroutineBody
+
+data SubroutineKind =
+    SRConstructor
+  | SRFunction
+  | SRMethod
+
+data SubroutineType =
+    VoidType
+  | SRType JackType
+
+data Parameter =
+    Param JackType VarName
+
+data SubroutineBody =
+    SubroutineBody [VarDec] [Statement]
+
 data VarDec =
     VarDec JackType [VarName]
 
