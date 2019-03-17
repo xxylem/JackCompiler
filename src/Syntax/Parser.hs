@@ -11,8 +11,92 @@ type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
 
+parseJackType :: TokenParser JackType
+parseJackType ts =
+        (   skipIntKw ts
+        >>= \(_, ts)
+        ->  return (IntType, ts))
+    <|> (   skipCharKw ts
+        >>= \(_, ts)
+        ->  return (CharType, ts))
+    <|> (   skipBoolKw ts
+        >>= \(_, ts)
+        ->  return (BoolType, ts))
+    <|> (   parseClassName ts
+        >>= \(className, ts)
+        ->  return (ClassType className, ts))
+    
+parseVarNameListOption :: TokenParser VarName
+parseVarNameListOption ts =
+        skipComma ts
+    >>= \(_, ts)
+    ->  parseVarName ts
+
+parseVarNameListOptions :: TokenParser [VarName]
+parseVarNameListOptions ts =
+        case parseVarNameListOption ts of
+            Just (name, ts) -> case parseVarNameListOptions ts of
+                                    Just (names, ts') -> Just (name:names, ts')
+                                    Nothing           -> Just ([name], ts)
+            Nothing         -> Just ([], ts)
+
+parseVarNameList :: TokenParser [VarName]
+parseVarNameList ts =
+        parseVarName ts
+    >>= \(name, ts)
+    ->  parseVarNameListOptions ts
+    >>= \(names, ts)
+    ->  return (name:names, ts)
+
+parseVarDec :: TokenParser VarDec
+parseVarDec ts =
+        skipVarKw ts
+    >>= \(_, ts)
+    ->  parseJackType ts
+    >>= \(jackType, ts)
+    ->  parseVarNameList ts
+    >>= \(varNames, ts)
+    ->  skipSemicolon ts
+    >>= \(_, ts)
+    ->  return (VarDec jackType varNames, ts)
+
 parseStatements :: TokenParser [Statement]
-parseStatements = undefined
+parseStatements ts =
+    case parseStatement ts of
+        Just (stmt, ts) -> case parseStatements ts of
+                                Just (stmts, ts') -> Just (stmt:stmts, ts')
+                                Nothing           -> Just ([stmt], ts)
+        Nothing -> Just ([], ts)
+
+parseStatement :: TokenParser Statement
+parseStatement ts =
+        parseLetStatement ts
+    <|> parseIfStatement ts
+    <|> parseWhileStatement ts
+    <|> parseDoStatement ts
+    <|> parseReturnStatement ts
+
+parseLetStatementName :: TokenParser LetStatementName
+parseLetStatementName ts =
+        (   parseEArrayExp ts
+        >>= \(arr, ts) -> Just (LSA arr, ts))
+    <|> (   parseVarName ts
+        >>= \(varName, ts) -> Just (LSV varName, ts) )
+
+parseLetStatement :: TokenParser Statement
+parseLetStatement ts =
+        skipLet ts
+    >>= \(_, ts)
+    ->  parseLetStatementName ts
+    >>= \(name, ts)
+    ->  skipEqual ts
+    >>= \(_, ts)
+    ->  parseExpression ts
+    >>= \(expr, ts)
+    ->  skipSemicolon ts
+    >>= \(_, ts)
+    ->  return (LetStatement name expr, ts)
+
 
 parseElseStatement :: TokenParser (Maybe [Statement])
 parseElseStatement ts =
@@ -332,6 +416,26 @@ skipToken tkn (t:ts) =
     if tkn == t then Just ((), ts)
                 else Nothing
 
+skipIntKw :: TokenParser ()
+skipIntKw =
+    skipToken (KW Int)
+
+skipCharKw :: TokenParser ()
+skipCharKw =
+    skipToken (KW Char)
+
+skipVarKw :: TokenParser ()
+skipVarKw =
+    skipToken (KW Var)
+
+skipBoolKw :: TokenParser ()
+skipBoolKw =
+    skipToken (KW Boolean)
+
+skipLet :: TokenParser ()
+skipLet =
+    skipToken (KW Let)
+
 skipIf :: TokenParser ()
 skipIf =
     skipToken (KW If)
@@ -363,6 +467,10 @@ skipFullStop =
 skipSemicolon :: TokenParser ()
 skipSemicolon =
     skipToken (SY Semicolon)
+
+skipEqual :: TokenParser ()
+skipEqual =
+    skipToken (SY Equal)
 
 skipLParen :: TokenParser ()
 skipLParen =
