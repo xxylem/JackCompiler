@@ -258,7 +258,7 @@ skipToken tkn (t:ts) =
 
 skipComma :: TokenParser ()
 skipComma =
-    skipComma (SY Comma)
+    skipToken (SY Comma)
 
 skipFullStop :: TokenParser ()
 skipFullStop =

@@ -115,3 +115,25 @@ main = hspec $ do
 
             it "parseUnaryOpTerm negates bool" $ do
                 runTest parseUnaryOpTerm [SY Tilde, KW TrueKW] `shouldBe` TUnaryOp UOPBitNegation (TKeywordConstant EKConTrue)
+
+        describe "Symbol Skipping Test Suite" $ do
+
+            it "skipComma skips comma" $ do
+                runTest skipComma [SY Comma] `shouldBe` ()
+
+            it "skipFullStop skips full stop" $ do
+                runTest skipFullStop [SY FullStop] `shouldBe` ()
+
+            it "skipLParen skips left paren" $ do
+                runTest skipLParen [SY LParen] `shouldBe` ()
+
+            it "skipRParen skips right paren" $ do
+                runTest skipRParen [SY RParen] `shouldBe` ()
+    
+            it "skipLSquareBracket skips left sq bracket" $ do
+                runTest skipLSquareBracket [SY LSquareBracket] `shouldBe` ()
+    
+            it "skipRSquareBracket skips right sq bracket" $ do
+                runTest skipRSquareBracket [SY RSquareBracket] `shouldBe` ()
+    
+
