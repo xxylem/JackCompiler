@@ -34,11 +34,11 @@ parseEKeywordConst (t:ts) =
         (KW This)       -> Just (EKConThis, ts)
         _               -> Nothing
 
-parseEVarName :: TokenParser EVarName
-parseEVarName [] = Nothing
-parseEVarName (t:ts) =
+parseVarName :: TokenParser VarName
+parseVarName [] = Nothing
+parseVarName (t:ts) =
     case t of
-        (ID name) -> Just (EVarName name, ts)
+        (ID name) -> Just (VarName name, ts)
         _         -> Nothing
 
 parseLSquareBracket :: TokenParser ()
@@ -57,7 +57,7 @@ parseRSquareBracket (t:ts) =
 
 parseEArrayExp :: TokenParser EArrayExp --todo create state, maybe monad comb.
 parseEArrayExp ts = 
-        parseEVarName ts
+        parseVarName ts
     >>= \(varName, ts)
     ->  parseLSquareBracket ts
     >>= \(_, ts)
@@ -66,6 +66,88 @@ parseEArrayExp ts =
     ->  parseRSquareBracket ts
     >>= \(_, ts)
     ->  return (EArrayExp varName expr, ts)
+
+parseLParen :: TokenParser ()
+parseLParen [] = Nothing
+parseLParen (t:ts) =
+    case t of
+        (SY LParen) -> Just ((), ts)
+        _           -> Nothing
+
+parseRParen :: TokenParser ()
+parseRParen [] = Nothing
+parseRParen (t:ts) =
+    case t of
+        (SY RParen) -> Just ((), ts)
+        _           -> Nothing
+
+parseSubroutineName :: TokenParser SubroutineName
+parseSubroutineName [] = Nothing
+parseSubroutineName (t:ts) =
+    case t of
+        (ID i) -> Just (SubroutineName i, ts)
+        _      -> Nothing
+
+parseClassName :: TokenParser ClassName
+parseClassName [] = Nothing
+parseClassName (t:ts) =
+    case t of
+        (ID i) -> Just (ClassName i, ts)
+        _      -> Nothing
+
+parseSubroutineCallSimple :: TokenParser SubroutineCall
+parseSubroutineCallSimple ts =
+        parseSubroutineName ts
+    >>= \(subName, ts)
+    ->  parseLParen ts
+    >>= \(_, ts)
+    ->  parseExpressionList ts
+    >>= \(exprs, ts)
+    ->  parseRParen ts
+    >>= \(_, ts)
+    ->  return (SR subName exprs, ts)
+
+parseFullStop :: TokenParser ()
+parseFullStop [] = Nothing
+parseFullStop (t:ts) =
+    case t of
+        (SY FullStop) -> Just ((), ts)
+        _             -> Nothing
+
+parseSubroutineCallClass :: TokenParser SubroutineCall
+parseSubroutineCallClass ts =
+        parseClassName ts
+    >>= \(className, ts)
+    ->  parseFullStop ts
+    >>= \(_, ts)
+    ->  parseSubroutineName ts
+    >>= \(subName, ts)
+    ->  parseLParen ts
+    >>= \(_, ts)
+    ->  parseExpressionList ts
+    >>= \(exprs, ts)
+    ->  parseRParen ts
+    >>= \(_, ts)
+    ->  return (SRCN className subName exprs, ts) -- todo use parseSubroutineSimple
+
+parseSubroutineCallVar :: TokenParser SubroutineCall
+parseSubroutineCallVar ts =
+    parseVarName ts
+    >>= \(varName, ts)
+    ->  parseFullStop ts
+    >>= \(_, ts)
+    ->  parseSubroutineName ts
+    >>= \(subName, ts)
+    ->  parseLParen ts
+    >>= \(_, ts)
+    ->  parseExpressionList ts
+    >>= \(exprs, ts)
+    ->  parseRParen ts
+    >>= \(_, ts)
+    ->  return (SRVN varName subName exprs, ts) -- todo use parseSubroutineSimple
+
+parseSubroutineCall :: TokenParser SubroutineCall
+parseSubroutineCall = undefined
 
 parseComma :: TokenParser ()
 parseComma [] = Nothing

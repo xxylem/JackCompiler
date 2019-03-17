@@ -10,7 +10,7 @@ data Term =
     TIC EIntegerConstant
   | TSC EStringConstant
   | TKC EKeywordConstant
-  | TVN EVarName
+  | TVN VarName
 
 
 newtype EIntegerConstant = EIntegerConstant Integer
@@ -22,10 +22,18 @@ data EKeywordConstant =
   | EKConNull
   | EKConThis
 
-newtype EVarName = EVarName BS.ByteString
+newtype VarName = VarName BS.ByteString
 
 data EArrayExp =
-    EArrayExp EVarName Expression
+    EArrayExp VarName Expression
+
+newtype SubroutineName = SubroutineName BS.ByteString
+newtype ClassName = ClassName BS.ByteString
+
+data SubroutineCall =
+    SR      SubroutineName [Expression]
+  | SRCN    ClassName SubroutineName [Expression]
+  | SRVN    VarName SubroutineName [Expression]
 
 data Op =
     OpPlus
