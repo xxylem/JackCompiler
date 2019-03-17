@@ -7,10 +7,12 @@ import Syntax.Parser
 import Test.Hspec
 import Test.QuickCheck
 
-runTest :: TokenParser a -> [Token] -> a
-runTest p ts =
+runTestExpectSuccess :: TokenParser a -> [Token] -> a
+runTestExpectSuccess p ts =
     let Just (res, _) = p ts in
         res
+
+
 
 expressionListSingleExpTkns1 :: [Token]
 expressionListSingleExpTkns1 =
@@ -62,78 +64,78 @@ main = hspec $ do
                     `shouldBe` Nothing
 
             it "parseExpressionList parses single item list" $ do
-                runTest parseExpressionList expressionListSingleExpTkns1
+                runTestExpectSuccess parseExpressionList expressionListSingleExpTkns1
                     `shouldBe` expressionListSingleExpRes1
 
             it "parseExpressionList parses list of integers" $ do
-                runTest parseExpressionList expressionListTokens1
+                runTestExpectSuccess parseExpressionList expressionListTokens1
                     `shouldBe` expressionListResult1
 
             it "parseExpressionList parses mix of terminal and op expressions" $ do
-                runTest parseExpressionList expressionListTokens2
+                runTestExpectSuccess parseExpressionList expressionListTokens2
                     `shouldBe` expressionListResult2
 
         describe "parseOp Test Suite" $ do
 
             it "parseOp parses Plus" $ do
-                runTest parseOp [SY Plus] `shouldBe` OpPlus
+                runTestExpectSuccess parseOp [SY Plus] `shouldBe` OpPlus
 
             it "parseOp parses Minus" $ do
-                runTest parseOp [SY Minus] `shouldBe` OpMinus
+                runTestExpectSuccess parseOp [SY Minus] `shouldBe` OpMinus
 
             it "parseOp parses Multiply" $ do
-                runTest parseOp [SY Asterix] `shouldBe` OpMultiply
+                runTestExpectSuccess parseOp [SY Asterix] `shouldBe` OpMultiply
 
             it "parseOp parses Divide" $ do
-                runTest parseOp [SY Slash] `shouldBe` OpDivide
+                runTestExpectSuccess parseOp [SY Slash] `shouldBe` OpDivide
             
             it "parseOp parses And" $ do
-                runTest parseOp [SY Ampersand] `shouldBe` OpAnd
+                runTestExpectSuccess parseOp [SY Ampersand] `shouldBe` OpAnd
 
             it "parseOp parses Or" $ do
-                runTest parseOp [SY VerticalBar] `shouldBe` OpOr
+                runTestExpectSuccess parseOp [SY VerticalBar] `shouldBe` OpOr
 
             it "parseOp parses LT" $ do
-                runTest parseOp [SY LAngleBracket] `shouldBe` OpLT
+                runTestExpectSuccess parseOp [SY LAngleBracket] `shouldBe` OpLT
             
             it "parseOp parses GT" $ do
-                runTest parseOp [SY RAngleBracket] `shouldBe` OpGT
+                runTestExpectSuccess parseOp [SY RAngleBracket] `shouldBe` OpGT
 
             it "parseOp parses Equal" $ do
-                runTest parseOp [SY Equal] `shouldBe` OpEqual
+                runTestExpectSuccess parseOp [SY Equal] `shouldBe` OpEqual
 
         describe "UnaryOp Expressions Suite" $ do
 
             it "parseUnaryOp returns ArithNeg" $ do
-                runTest parseUnaryOp [SY Minus] `shouldBe` UOPArithNegation
+                runTestExpectSuccess parseUnaryOp [SY Minus] `shouldBe` UOPArithNegation
 
             it "parseUnaryOp returns BitNeg" $ do
-                runTest parseUnaryOp [SY Tilde] `shouldBe` UOPBitNegation
+                runTestExpectSuccess parseUnaryOp [SY Tilde] `shouldBe` UOPBitNegation
 
             it "parseUnaryOpTerm negates int" $ do
-                runTest parseUnaryOpTerm [SY Minus, IC 10] `shouldBe` TUnaryOp UOPArithNegation (TIntegerConstant 10)
+                runTestExpectSuccess parseUnaryOpTerm [SY Minus, IC 10] `shouldBe` TUnaryOp UOPArithNegation (TIntegerConstant 10)
 
             it "parseUnaryOpTerm negates bool" $ do
-                runTest parseUnaryOpTerm [SY Tilde, KW TrueKW] `shouldBe` TUnaryOp UOPBitNegation (TKeywordConstant EKConTrue)
+                runTestExpectSuccess parseUnaryOpTerm [SY Tilde, KW TrueKW] `shouldBe` TUnaryOp UOPBitNegation (TKeywordConstant EKConTrue)
 
         describe "Symbol Skipping Test Suite" $ do
 
             it "skipComma skips comma" $ do
-                runTest skipComma [SY Comma] `shouldBe` ()
+                runTestExpectSuccess skipComma [SY Comma] `shouldBe` ()
 
             it "skipFullStop skips full stop" $ do
-                runTest skipFullStop [SY FullStop] `shouldBe` ()
+                runTestExpectSuccess skipFullStop [SY FullStop] `shouldBe` ()
 
             it "skipLParen skips left paren" $ do
-                runTest skipLParen [SY LParen] `shouldBe` ()
+                runTestExpectSuccess skipLParen [SY LParen] `shouldBe` ()
 
             it "skipRParen skips right paren" $ do
-                runTest skipRParen [SY RParen] `shouldBe` ()
+                runTestExpectSuccess skipRParen [SY RParen] `shouldBe` ()
     
             it "skipLSquareBracket skips left sq bracket" $ do
-                runTest skipLSquareBracket [SY LSquareBracket] `shouldBe` ()
+                runTestExpectSuccess skipLSquareBracket [SY LSquareBracket] `shouldBe` ()
     
             it "skipRSquareBracket skips right sq bracket" $ do
-                runTest skipRSquareBracket [SY RSquareBracket] `shouldBe` ()
+                runTestExpectSuccess skipRSquareBracket [SY RSquareBracket] `shouldBe` ()
     
 
