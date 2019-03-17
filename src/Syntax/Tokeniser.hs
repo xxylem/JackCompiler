@@ -146,3 +146,4 @@ tokeniseJackFiles (f:fs) =
     case tokeniseJackFile f of
         Right parsedFile -> parsedFile : tokeniseJackFiles fs
         Left  _          -> tokeniseJackFiles fs
+
