@@ -2,36 +2,60 @@ module Data.AnalyserModel where
 
 import qualified Data.ByteString.Char8 as BS
 
+data JackClass =
+    JackClass ClassName
+              [ClassVarDec]
+              [SubroutineDec]
+              deriving (Eq, Show)
+
+data ClassVarDec =
+    ClassVarDec ClassVarKind
+                JackType
+                [VarName]
+                deriving (Eq, Show)
+
+data ClassVarKind =
+    CVStatic
+  | CVField
+  deriving (Eq, Show)
+
 data SubroutineDec =
     SubroutineDec   SubroutineKind
                     SubroutineType
                     SubroutineName
                     [Parameter]
                     SubroutineBody
+                    deriving (Eq, Show)
 
 data SubroutineKind =
     SRConstructor
   | SRFunction
   | SRMethod
+  deriving (Eq, Show)
 
 data SubroutineType =
     VoidType
   | SRType JackType
+  deriving (Eq, Show)
 
 data Parameter =
     Param JackType VarName
+    deriving (Eq, Show)
 
 data SubroutineBody =
     SubroutineBody [VarDec] [Statement]
+    deriving (Eq, Show)
 
 data VarDec =
     VarDec JackType [VarName]
+    deriving (Eq, Show)
 
 data JackType =
     IntType
   | CharType
   | BoolType
   | ClassType ClassName
+  deriving (Eq, Show)
 
 data Statement =
     LetStatement LetStatementName Expression
@@ -39,10 +63,12 @@ data Statement =
   | WhileStatement Expression [Statement]
   | DoStatement SubroutineCall
   | ReturnStatement (Maybe Expression)
+  deriving (Eq, Show)
 
 data LetStatementName =
     LSV VarName
   | LSA EArrayExp
+  deriving (Eq, Show)
 
 data Expression =
     ESingleTerm Term

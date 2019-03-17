@@ -11,7 +11,56 @@ type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
 
-   
+parseJackClass :: TokenParser JackClass
+parseJackClass ts =
+        skipClass ts
+    >>= \(_, ts)
+    ->  parseClassName ts
+    >>= \(cName, ts)
+    ->  skipLCurlyBracket ts
+    >>= \(_, ts)
+    ->  parseClassVarDecs ts
+    >>= \(cVarDecs, ts)
+    ->  parseSubroutineDecs ts
+    >>= \(srDecs, ts)
+    ->  skipRCurlyBracket ts
+    >>= \(_, ts)
+    ->  return (JackClass cName
+                          cVarDecs
+                          srDecs, ts)
+
+parseClassVarDecs :: TokenParser [ClassVarDec]
+parseClassVarDecs ts =
+    case parseClassVarDec ts of
+        Just (cVarDec, ts) -> case parseClassVarDecs ts of
+                                Just (cVarDecs, ts') -> Just (cVarDec:cVarDecs, ts')
+                                Nothing              -> Just ([cVarDec], ts)
+        Nothing            -> Just ([], ts)
+
+parseClassVarDec :: TokenParser ClassVarDec
+parseClassVarDec ts =
+        parseClassVarKind ts
+    >>= \(cVarKind, ts)
+    ->  parseJackType ts
+    >>= \(jType, ts)
+    ->  parseVarNameList ts
+    >>= \(vNames, ts)
+    ->  skipSemicolon ts
+    >>= \(_, ts)
+    ->  return (ClassVarDec cVarKind
+                            jType
+                            vNames,
+                            ts)
+
+parseClassVarKind :: TokenParser ClassVarKind
+parseClassVarKind ts =
+        (   skipStatic ts
+        >>= \(_, ts)
+        ->  return (CVStatic, ts))
+    <|> (   skipField ts
+        >>= \(_, ts)
+        ->  return (CVField, ts))
+
 parseJackType :: TokenParser JackType
 parseJackType ts =
         (   skipIntKw ts
@@ -26,6 +75,14 @@ parseJackType ts =
     <|> (   parseClassName ts
         >>= \(className, ts)
         ->  return (ClassType className, ts))
+
+parseSubroutineDecs :: TokenParser [SubroutineDec]
+parseSubroutineDecs ts =
+    case parseSubroutineDec ts of
+        Just (srDec, ts) -> case parseSubroutineDecs ts of
+                                Just (srDecs, ts') -> Just (srDec:srDecs, ts')
+                                Nothing            -> Just ([srDec], ts)
+        Nothing          -> Just ([], ts)
 
 parseSubroutineDec :: TokenParser SubroutineDec
 parseSubroutineDec ts =
@@ -507,6 +564,18 @@ skipToken tkn (t:ts) =
 skipVoid :: TokenParser ()
 skipVoid =
     skipToken (KW Void)
+
+skipField :: TokenParser ()
+skipField =
+    skipToken (KW Field)
+
+skipClass :: TokenParser ()
+skipClass =
+    skipToken (KW Class)
+
+skipStatic :: TokenParser ()
+skipStatic =
+    skipToken (KW Static)
 
 skipFunction :: TokenParser ()
 skipFunction =
