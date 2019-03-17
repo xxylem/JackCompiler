@@ -3,6 +3,10 @@ module Syntax.Parser where
 import Data.TokenModel
 import Data.AnalyserModel
 
+import Data.Char (isUpper, isLower)
+import qualified Data.ByteString.Char8 as BS
+
+
 type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
@@ -38,8 +42,8 @@ parseVarName :: TokenParser VarName
 parseVarName [] = Nothing
 parseVarName (t:ts) =
     case t of
-        (ID name) -> Just (VarName name, ts)
-        _         -> Nothing
+        (ID name) -> if isLower $ BS.head name then Just (VarName name, ts) else Nothing
+        _               -> Nothing
 
 parseLSquareBracket :: TokenParser ()
 parseLSquareBracket [] = Nothing
@@ -85,15 +89,15 @@ parseSubroutineName :: TokenParser SubroutineName
 parseSubroutineName [] = Nothing
 parseSubroutineName (t:ts) =
     case t of
-        (ID i) -> Just (SubroutineName i, ts)
-        _      -> Nothing
+        (ID i) -> if isLower $ BS.head i then Just (SubroutineName i, ts) else Nothing
+        _            -> Nothing
 
 parseClassName :: TokenParser ClassName
 parseClassName [] = Nothing
 parseClassName (t:ts) =
     case t of
-        (ID i) -> Just (ClassName i, ts)
-        _      -> Nothing
+        (ID i) -> if isUpper $ BS.head i then Just (ClassName i, ts) else Nothing
+        _            -> Nothing
 
 parseSubroutineCallSimple :: TokenParser SubroutineCall
 parseSubroutineCallSimple ts =

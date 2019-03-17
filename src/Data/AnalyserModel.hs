@@ -11,18 +11,18 @@ data Term =
   | TSC EStringConstant
   | TKC EKeywordConstant
   | TVN VarName
-
+  | TAR EArrayExp
+  | TSR SubroutineCall
 
 newtype EIntegerConstant = EIntegerConstant Integer
 newtype EStringConstant  = EStringConstant BS.ByteString
+newtype VarName = VarName BS.ByteString
 
 data EKeywordConstant =
     EKConTrue
   | EKConFalse
   | EKConNull
   | EKConThis
-
-newtype VarName = VarName BS.ByteString
 
 data EArrayExp =
     EArrayExp VarName Expression
@@ -34,6 +34,8 @@ data SubroutineCall =
     SR      SubroutineName [Expression]
   | SRCN    ClassName SubroutineName [Expression]
   | SRVN    VarName SubroutineName [Expression]
+
+newtype ParenExpression = ParenExpression Expression
 
 data Op =
     OpPlus
