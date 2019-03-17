@@ -2,6 +2,14 @@ module Data.AnalyserModel where
 
 import qualified Data.ByteString.Char8 as BS
 
+
+data Statement =
+    IfStatement Expression [Statement] (Maybe [Statement])
+  | WhileStatement Expression [Statement]
+  | DoStatement SubroutineCall
+  | ReturnStatement (Maybe Expression)
+
+
 data Expression =
     ESingleTerm Term
   | ETermOpTerm      Term Op Term

@@ -7,10 +7,86 @@ import Control.Applicative ((<|>))
 import Data.Char (isUpper, isLower)
 import qualified Data.ByteString.Char8 as BS
 
-
 type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
+
+parseStatements :: TokenParser [Statement]
+parseStatements = undefined
+
+parseElseStatement :: TokenParser (Maybe [Statement])
+parseElseStatement ts =
+        (   skipElse ts
+        >>= \(_, ts)
+        ->  skipLCurlyBracket ts
+        >>= \(_, ts)
+        ->  parseStatements ts
+        >>= \(stmts, ts)
+        ->  skipRCurlyBracket ts
+        >>= \(_, ts)
+        ->  return (Just stmts, ts))
+    <|> return (Nothing, ts)
+
+parseIfStatement :: TokenParser Statement
+parseIfStatement ts =
+        skipIf ts
+    >>= \(_, ts)
+    ->  skipLParen ts
+    >>= \(_, ts)
+    ->  parseExpression ts
+    >>= \(expr, ts)
+    ->  skipRParen ts
+    >>= \(_, ts)
+    ->  skipLCurlyBracket ts
+    >>= \(_, ts)
+    ->  parseStatements ts
+    >>= \(ifStmts, ts)
+    ->  skipRCurlyBracket ts
+    >>= \(_, ts)
+    ->  parseElseStatement ts
+    >>= \(elseStmts, ts)
+    ->  return (IfStatement expr ifStmts elseStmts, ts)
+    
+
+parseWhileStatement :: TokenParser Statement
+parseWhileStatement ts =
+        skipWhile ts
+    >>= \(_, ts)
+    ->  skipLParen ts
+    >>= \(_, ts)
+    ->  parseExpression ts
+    >>= \(expr, ts)
+    ->  skipRParen ts
+    >>= \(_, ts)
+    ->  skipLCurlyBracket ts
+    >>= \(_, ts)
+    ->  parseStatements ts
+    >>= \(stmts, ts)
+    ->  skipRCurlyBracket ts
+    >>= \(_, ts)
+    ->  return (WhileStatement expr stmts, ts)
+
+parseDoStatement :: TokenParser Statement
+parseDoStatement ts =
+        skipDo ts
+    >>= \(_, ts)
+    ->  parseSubroutineCall ts
+    >>= \(subCall, ts)
+    ->  skipSemicolon ts
+    >>= \(_, ts)
+    ->  return (DoStatement subCall, ts)
+
+parseReturnStatement :: TokenParser Statement
+parseReturnStatement ts =
+        skipReturn ts
+    >>= \(_, ts)
+    ->  case parseExpression ts of
+            Just (expr, ts') -> Just (ReturnStatement (Just expr), ts')
+            Nothing          -> Just (ReturnStatement Nothing, ts)
+    >>= \(retStatement, ts)
+    ->  skipSemicolon ts
+    >>= \(_, ts)
+    ->  return (retStatement, ts)
 
 parseExpression :: TokenParser Expression
 parseExpression ts =
@@ -256,6 +332,26 @@ skipToken tkn (t:ts) =
     if tkn == t then Just ((), ts)
                 else Nothing
 
+skipIf :: TokenParser ()
+skipIf =
+    skipToken (KW If)
+
+skipElse :: TokenParser ()
+skipElse =
+    skipToken (KW Else)
+
+skipWhile :: TokenParser ()
+skipWhile =
+    skipToken (KW While)
+
+skipDo :: TokenParser ()
+skipDo =
+    skipToken (KW Do)
+
+skipReturn :: TokenParser ()
+skipReturn =
+    skipToken (KW Return)
+
 skipComma :: TokenParser ()
 skipComma =
     skipToken (SY Comma)
@@ -263,6 +359,10 @@ skipComma =
 skipFullStop :: TokenParser ()
 skipFullStop =
     skipToken (SY FullStop)
+
+skipSemicolon :: TokenParser ()
+skipSemicolon =
+    skipToken (SY Semicolon)
 
 skipLParen :: TokenParser ()
 skipLParen =
@@ -279,3 +379,11 @@ skipLSquareBracket =
 skipRSquareBracket :: TokenParser ()
 skipRSquareBracket =
     skipToken (SY RSquareBracket)
+
+skipLCurlyBracket :: TokenParser ()
+skipLCurlyBracket =
+    skipToken (SY LCurlyBracket)
+
+skipRCurlyBracket :: TokenParser ()
+skipRCurlyBracket =
+    skipToken (SY RCurlyBracket)

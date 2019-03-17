@@ -114,12 +114,13 @@ parenExpressionTkns1 =
     ,   IC 100
     ,   SY RParen
     ]
-parenExpressionRes1 :: Term
+parenExpressionRes1 :: Expression
 parenExpressionRes1 =
-    TParenExpression
-        (ETermOpTerm (TIntegerConstant 10)
-                     OpMinus
-                     (TIntegerConstant 100))
+    ESingleTerm
+        (TParenExpression
+            (ETermOpTerm    (TIntegerConstant 10)
+                            OpMinus
+                            (TIntegerConstant 100)))
 
 expressionListSingleExpTkns1 :: [Token]
 expressionListSingleExpTkns1 =
@@ -198,11 +199,8 @@ main = hspec $ do
                 runTestExpectSuccess parseExpression expressionSRCTkns3
                     `shouldBe` expressionSRCRes3
 
-
-        describe "parseParenExpression Suite" $ do
-
-            it "parseParenExpression handles TermOpTerm" $ do
-                runTestExpectSuccess parseParenExpression parenExpressionTkns1
+            it "parseExpression handles paren TermOpTerm" $ do
+                runTestExpectSuccess parseExpression parenExpressionTkns1
                     `shouldBe` parenExpressionRes1
         
         describe "parseExpressionList Suite" $ do
