@@ -7,6 +7,9 @@ type TokenParser a =
         TokenisedJackFile
     ->  Maybe (a, TokenisedJackFile)
 
+parseExpression :: TokenParser Expression
+parseExpression = undefined
+
 parseEIntegerConst :: TokenParser EIntegerConstant
 parseEIntegerConst [] = Nothing
 parseEIntegerConst (t:ts) =
@@ -37,6 +40,63 @@ parseEVarName (t:ts) =
     case t of
         (ID name) -> Just (EVarName name, ts)
         _         -> Nothing
+
+parseLSquareBracket :: TokenParser ()
+parseLSquareBracket [] = Nothing
+parseLSquareBracket (t:ts) =
+    case t of
+        (SY LSquareBracket) -> Just ((), ts)
+        _                   -> Nothing
+
+parseRSquareBracket :: TokenParser ()
+parseRSquareBracket [] = Nothing
+parseRSquareBracket (t:ts) =
+    case t of
+        (SY RSquareBracket) -> Just ((), ts)
+        _                   -> Nothing
+
+parseEArrayExp :: TokenParser EArrayExp --todo create state, maybe monad comb.
+parseEArrayExp ts = 
+        parseEVarName ts
+    >>= \(varName, ts)
+    ->  parseLSquareBracket ts
+    >>= \(_, ts)
+    ->  parseExpression ts
+    >>= \(expr, ts)
+    ->  parseRSquareBracket ts
+    >>= \(_, ts)
+    ->  return (EArrayExp varName expr, ts)
+
+parseComma :: TokenParser ()
+parseComma [] = Nothing
+parseComma (t:ts) =
+    case t of
+        (SY Comma) -> Just ((), ts)
+        _          -> Nothing
+
+parseExpressionOption :: TokenParser Expression
+parseExpressionOption [] = Nothing
+parseExpressionOption ts =
+    case parseComma ts of
+        Just (_, ts) -> parseExpression ts
+        Nothing      -> Nothing
+
+parseExpressionsOption :: TokenParser [Expression]
+parseExpressionsOption ts =
+    case parseExpressionOption ts of
+        Just (expr, ts) -> case parseExpressionsOption ts of
+                            Just (rsf, ts') -> Just (expr:rsf, ts')
+        Nothing         -> Just ([], ts)
+
+parseExpressionList :: TokenParser [Expression]
+parseExpressionList [] = Nothing
+parseExpressionList ts =
+        parseExpression ts
+    >>= \(expr, ts)
+    ->  parseExpressionsOption ts
+    >>= \(exprs, ts)
+    ->  return (expr:exprs, ts)
+    
 
 parseOp :: TokenParser Op
 parseOp [] = Nothing

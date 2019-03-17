@@ -2,6 +2,16 @@ module Data.AnalyserModel where
 
 import qualified Data.ByteString.Char8 as BS
 
+data Expression =
+    ESingleTerm Term
+  | ETerms      Term Op Term
+
+data Term =
+    TIC EIntegerConstant
+  | TSC EStringConstant
+  | TKC EKeywordConstant
+  | TVN EVarName
+
 
 newtype EIntegerConstant = EIntegerConstant Integer
 newtype EStringConstant  = EStringConstant BS.ByteString
@@ -12,7 +22,10 @@ data EKeywordConstant =
   | EKConNull
   | EKConThis
 
-newtype EVarName = EVarName BS.ByteString 
+newtype EVarName = EVarName BS.ByteString
+
+data EArrayExp =
+    EArrayExp EVarName Expression
 
 data Op =
     OpPlus
@@ -28,5 +41,3 @@ data Op =
 data UnaryOp =
     UOPArithNegation
   | UOPBitNegation
-
-
