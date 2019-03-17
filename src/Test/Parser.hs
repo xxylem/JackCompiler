@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Test.Parser where
 
 import Data.AnalyserModel
@@ -11,6 +13,98 @@ runTestExpectSuccess :: TokenParser a -> [Token] -> a
 runTestExpectSuccess p ts =
     let Just (res, _) = p ts in
         res
+
+expressionTkns1 :: [Token]
+expressionTkns1 =
+    [   IC 1    ]
+expressionRes1 :: Expression
+expressionRes1 =
+    ESingleTerm (TIntegerConstant 1)
+expressionTkns2 :: [Token]
+expressionTkns2 =
+    [   SC "Hello"  ]
+expressionRes2 :: Expression
+expressionRes2 =
+    ESingleTerm (TStringConstant "Hello")
+expressionTkns3 :: [Token]
+expressionTkns3 =
+    [  KW FalseKW   ]
+expressionRes3 :: Expression
+expressionRes3 =
+    ESingleTerm (TKeywordConstant EKConFalse)
+expressionTkns4 :: [Token]
+expressionTkns4 =
+    [   ID "bob"    ]
+expressionRes4 :: Expression
+expressionRes4 =
+    ESingleTerm (TVarName (VarName "bob"))
+expressionTkns5 :: [Token]
+expressionTkns5 =
+    [   ID "bob"
+    ,   SY LSquareBracket
+    ] ++
+    expressionTkns2 ++
+    [   SY RSquareBracket    ]
+expressionRes5 :: Expression
+expressionRes5 =
+    ESingleTerm (TArrayExp
+                    (EArrayExp (VarName "bob")
+                              expressionRes2))
+
+expressionSRCTkns1 :: [Token]
+expressionSRCTkns1 =
+    [   ID "bob"    
+    ,   SY LParen   ]
+    ++ expressionTkns1
+    ++ [SY Comma    ]
+    ++ expressionTkns2
+    ++ [SY RParen   ]
+expressionSRCRes1 :: Expression
+expressionSRCRes1 =
+    ESingleTerm (TSubroutineCall
+                    (SR (SubroutineName "bob")
+                        [expressionRes1,
+                         expressionRes2]))
+expressionSRCTkns2 :: [Token]
+expressionSRCTkns2 =
+    [   ID "Bob"
+    ,   SY FullStop
+    ,   ID "bob"
+    ,   SY LParen   ]
+    ++  expressionTkns4
+    ++  [SY Comma   ]
+    ++  expressionTkns5
+    ++  [SY Comma   ]
+    ++  expressionTkns3
+    ++  [SY RParen  ]
+expressionSRCRes2 :: Expression
+expressionSRCRes2 =
+    ESingleTerm (TSubroutineCall
+                    (SRCN   (ClassName "Bob")
+                            (SubroutineName "bob")
+                            [ expressionRes4
+                            , expressionRes5
+                            , expressionRes3 ]))
+expressionSRCTkns3 :: [Token]
+expressionSRCTkns3 =
+    [   ID "bob"
+    ,   SY FullStop
+    ,   ID "bob"
+    ,   SY LParen   ]
+    ++  expressionTkns4
+    ++  [SY Comma   ]
+    ++  expressionTkns5
+    ++  [SY Comma   ]
+    ++  expressionTkns3
+    ++  [SY RParen  ]
+expressionSRCRes3 :: Expression
+expressionSRCRes3 =
+    ESingleTerm (TSubroutineCall
+                    (SRVN   (VarName "bob")
+                            (SubroutineName "bob")
+                            [ expressionRes4
+                            , expressionRes5
+                            , expressionRes3 ]))
 
 parenExpressionTkns1 :: [Token]
 parenExpressionTkns1 =
@@ -69,6 +163,41 @@ expressionListResult2 =
 main :: IO ()
 main = hspec $ do
     describe "Parser Test Suite" $ do
+
+        describe "parseExpression Test Suite" $ do
+
+            it "parseExpression parses IntegerConstant" $ do
+                runTestExpectSuccess parseExpression expressionTkns1
+                    `shouldBe` expressionRes1
+
+            it "parseExpression parses StringConstant" $ do
+                runTestExpectSuccess parseExpression expressionTkns2
+                    `shouldBe` expressionRes2
+
+            it "parseExpression parses KeywordConstant" $ do
+                runTestExpectSuccess parseExpression expressionTkns3
+                    `shouldBe` expressionRes3
+
+            it "parseExpression parses VarName" $ do
+                runTestExpectSuccess parseExpression expressionTkns4
+                    `shouldBe` expressionRes4
+
+            it "parseExpression parses ArrayExpression" $ do
+                runTestExpectSuccess parseExpression expressionTkns5
+                    `shouldBe` expressionRes5
+
+            it "parseExpression parses simple SubroutineCall" $ do
+                runTestExpectSuccess parseExpression expressionSRCTkns1
+                    `shouldBe` expressionSRCRes1
+
+            it "parseExpression parses class SubroutineCall" $ do
+                runTestExpectSuccess parseExpression expressionSRCTkns2
+                    `shouldBe` expressionSRCRes2
+
+            it "parseExpression parses varName SubroutineCall" $ do
+                runTestExpectSuccess parseExpression expressionSRCTkns3
+                    `shouldBe` expressionSRCRes3
+
 
         describe "parseParenExpression Suite" $ do
 
