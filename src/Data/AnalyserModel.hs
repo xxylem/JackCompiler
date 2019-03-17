@@ -4,38 +4,44 @@ import qualified Data.ByteString.Char8 as BS
 
 data Expression =
     ESingleTerm Term
-  | ETerms      Term Op Term
+  | ETermOpTerm      Term Op Term
+  deriving (Eq, Show)
 
 data Term =
-    TIC EIntegerConstant
-  | TSC EStringConstant
-  | TKC EKeywordConstant
-  | TVN VarName
-  | TAR EArrayExp
-  | TSR SubroutineCall
+    TIntegerConstant Integer
+  | TStringConstant BS.ByteString
+  | TKeywordConstant EKeywordConstant
+  | TVarName VarName
+  | TArrayExp EArrayExp
+  | TSubroutineCall SubroutineCall
+  | TParenExpression Expression
+  | TUnaryOp UnaryOp Term
+  deriving (Eq, Show)
 
-newtype EIntegerConstant = EIntegerConstant Integer
-newtype EStringConstant  = EStringConstant BS.ByteString
 newtype VarName = VarName BS.ByteString
+    deriving (Eq, Show)
 
 data EKeywordConstant =
     EKConTrue
   | EKConFalse
   | EKConNull
   | EKConThis
+  deriving (Eq, Show)
 
 data EArrayExp =
     EArrayExp VarName Expression
+    deriving (Eq, Show)
 
 newtype SubroutineName = SubroutineName BS.ByteString
+    deriving (Eq, Show)
 newtype ClassName = ClassName BS.ByteString
+    deriving (Eq, Show)
 
 data SubroutineCall =
     SR      SubroutineName [Expression]
   | SRCN    ClassName SubroutineName [Expression]
   | SRVN    VarName SubroutineName [Expression]
-
-newtype ParenExpression = ParenExpression Expression
+  deriving (Eq, Show)
 
 data Op =
     OpPlus
@@ -47,7 +53,9 @@ data Op =
   | OpLT
   | OpGT
   | OpEqual
+  deriving (Eq, Show)
 
 data UnaryOp =
     UOPArithNegation
   | UOPBitNegation
+  deriving (Eq, Show)

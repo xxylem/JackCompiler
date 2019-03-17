@@ -3,6 +3,7 @@ module Syntax.Parser where
 import Data.TokenModel
 import Data.AnalyserModel
 
+import Control.Applicative ((<|>))
 import Data.Char (isUpper, isLower)
 import qualified Data.ByteString.Char8 as BS
 
@@ -12,25 +13,54 @@ type TokenParser a =
     ->  Maybe (a, TokenisedJackFile)
 
 parseExpression :: TokenParser Expression
-parseExpression = undefined
+parseExpression ts =
+        parseTermOpTermExp ts
+    <|> parseSingleTermExp ts
 
-parseEIntegerConst :: TokenParser EIntegerConstant
-parseEIntegerConst [] = Nothing
-parseEIntegerConst (t:ts) =
+parseTermOpTermExp :: TokenParser Expression
+parseTermOpTermExp ts =
+        parseTerm ts
+    >>= \(term1, ts)
+    ->  parseOp ts
+    >>= \(op, ts)
+    ->  parseTerm ts
+    >>= \(term2, ts)
+    ->  return (ETermOpTerm term1 op term2, ts)
+
+parseSingleTermExp :: TokenParser Expression
+parseSingleTermExp ts =
+    case parseTerm ts of
+        Just (res, ts) -> Just (ESingleTerm res, ts)
+        Nothing        -> Nothing
+
+parseTerm :: TokenParser Term
+parseTerm ts =
+        parseIntegerConstant ts
+    <|> parseStringConstant ts
+    <|> parseKeywordConstantTerm ts
+    <|> parseArrayExpTerm ts
+    <|> parseSubroutineCallTerm ts
+    <|> parseParenExpression ts
+    <|> parseUnaryOpTerm ts
+    <|> parseVarNameTerm ts
+
+parseIntegerConstant :: TokenParser Term
+parseIntegerConstant [] = Nothing
+parseIntegerConstant (t:ts) =
     case t of
-        (IC i) -> Just (EIntegerConstant i, ts)
+        (IC i) -> Just (TIntegerConstant i, ts)
         _      -> Nothing
 
-parseEStringConst :: TokenParser EStringConstant
-parseEStringConst [] = Nothing
-parseEStringConst (t:ts) =
+parseStringConstant :: TokenParser Term
+parseStringConstant [] = Nothing
+parseStringConstant (t:ts) =
     case t of
-        (SC s) -> Just (EStringConstant s, ts)
+        (SC s) -> Just (TStringConstant s, ts)
         _      -> Nothing
 
-parseEKeywordConst :: TokenParser EKeywordConstant
-parseEKeywordConst [] = Nothing
-parseEKeywordConst (t:ts) =
+parseEKeywordConstant :: TokenParser EKeywordConstant
+parseEKeywordConstant [] = Nothing
+parseEKeywordConstant (t:ts) =
     case t of
         (KW TrueKW)     -> Just (EKConTrue, ts)
         (KW FalseKW)    -> Just (EKConFalse, ts)
@@ -38,12 +68,23 @@ parseEKeywordConst (t:ts) =
         (KW This)       -> Just (EKConThis, ts)
         _               -> Nothing
 
+parseKeywordConstantTerm :: TokenParser Term
+parseKeywordConstantTerm ts =
+    case parseEKeywordConstant ts of
+        Just (res, ts) -> Just (TKeywordConstant res, ts)
+        Nothing        -> Nothing
+
 parseVarName :: TokenParser VarName
 parseVarName [] = Nothing
 parseVarName (t:ts) =
     case t of
         (ID name) -> if isLower $ BS.head name then Just (VarName name, ts) else Nothing
         _               -> Nothing
+
+parseVarNameTerm :: TokenParser Term
+parseVarNameTerm ts = case parseVarName ts of
+    Just (varName, ts) -> Just (TVarName varName, ts)
+    Nothing            -> Nothing
 
 parseLSquareBracket :: TokenParser ()
 parseLSquareBracket [] = Nothing
@@ -70,6 +111,12 @@ parseEArrayExp ts =
     ->  parseRSquareBracket ts
     >>= \(_, ts)
     ->  return (EArrayExp varName expr, ts)
+
+parseArrayExpTerm :: TokenParser Term
+parseArrayExpTerm ts =
+    case parseEArrayExp ts of
+        Just (res, ts) -> Just (TArrayExp res, ts)
+        Nothing        -> Nothing
 
 parseLParen :: TokenParser ()
 parseLParen [] = Nothing
@@ -151,7 +198,31 @@ parseSubroutineCallVar ts =
     ->  return (SRVN varName subName exprs, ts) -- todo use parseSubroutineSimple
 
 parseSubroutineCall :: TokenParser SubroutineCall
-parseSubroutineCall = undefined
+parseSubroutineCall ts =
+        case parseSubroutineCallClass ts of
+            Just res -> Just res
+            Nothing -> case parseSubroutineCallVar ts of
+                Just res -> Just res
+                Nothing -> case parseSubroutineCallSimple ts of
+                    Just res -> Just res
+                    Nothing -> Nothing
+
+parseSubroutineCallTerm :: TokenParser Term
+parseSubroutineCallTerm ts =
+    case parseSubroutineCall ts of
+        Just (res, ts) -> Just (TSubroutineCall res, ts)
+        Nothing        -> Nothing
+
+
+parseParenExpression :: TokenParser Term
+parseParenExpression ts =
+        parseLParen ts
+    >>= \(_, ts)
+    ->  parseExpression ts
+    >>= \(expr, ts)
+    ->  parseRParen ts
+    >>= \(_, ts)
+    ->  return (TParenExpression expr, ts)
 
 parseComma :: TokenParser ()
 parseComma [] = Nothing
@@ -207,3 +278,10 @@ parseUnaryOp (t:ts) =
         (SY Tilde) -> Just (UOPBitNegation, ts)
         _          -> Nothing
 
+parseUnaryOpTerm :: TokenParser Term
+parseUnaryOpTerm ts =
+        parseUnaryOp ts
+    >>= \(uop, ts)
+    ->  parseTerm ts
+    >>= \(term, ts)
+    ->  return (TUnaryOp uop term, ts)
