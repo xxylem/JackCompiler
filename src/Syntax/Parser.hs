@@ -410,10 +410,8 @@ parseVarName :: TokenParser VarName
 parseVarName [] = Left ("expected input in parseVarName", [])
 parseVarName (t:ts) =
     case t of
-        (ID name) -> if isLower $ BS.head name 
-                        then Right (VarName name, ts) 
-                        else Left ("failed parse in parseVarName", t:ts)
-        _               -> Left ("failed parse in parseVarName", t:ts)
+        (ID name) -> Right (VarName name, ts)
+        _         -> Left ("failed parse in parseVarName", t:ts)
 
 parseVarNameTerm :: TokenParser Term
 parseVarNameTerm ts = case parseVarName ts of
@@ -442,18 +440,14 @@ parseSubroutineName :: TokenParser SubroutineName
 parseSubroutineName [] = Left ("expected input in parseSubroutineName", [])
 parseSubroutineName (t:ts) =
     case t of
-        (ID i) -> if isLower $ BS.head i 
-                    then Right (SubroutineName i, ts) 
-                    else Left ("failed parse in parseSubroutineName", t:ts)
+        (ID i) -> Right (SubroutineName i, ts)
         _            -> Left ("failed parse in parseSubroutineName", t:ts)
 
 parseClassName :: TokenParser ClassName
 parseClassName [] = Left ("expected input in parseClassName", [])
 parseClassName (t:ts) =
     case t of
-        (ID i) -> if isUpper $ BS.head i 
-                    then Right (ClassName i, ts) 
-                    else Left ("failed parse in parseClassName", t:ts)
+        (ID i) -> Right (ClassName i, ts)
         _            -> Left ("failed parse in parseClassName", t:ts)
 
 parseSubroutineCallSimple :: TokenParser SubroutineCall
