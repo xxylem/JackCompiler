@@ -5,6 +5,7 @@ module Main where
 import Data.AnalyserModel
 import Data.TokenModel
 import Syntax.Tokeniser
+import Syntax.Parser
 
 import qualified Data.ByteString.Char8 as BS
 import ReadArgs (readArgs)
@@ -16,7 +17,7 @@ readJackFiles [] = return []
 readJackFiles (f:fs) =
     (:) <$> BS.readFile f <*> readJackFiles fs
     
-main :: IO [TokenisedJackFile]
+main :: IO [JackClass]
 main = do
     (path :: FilePath) <- readArgs
     if not $ hasExtension path
@@ -25,7 +26,10 @@ main = do
             let jackFileNames = map (path </>) $ filter (".jack" `isExtensionOf`) dirContents
             jackFiles <- readJackFiles jackFileNames
             let tokenisedJackFiles = tokeniseJackFiles jackFiles
-            return tokenisedJackFiles
+            case parseJackClasses tokenisedJackFiles of
+                Right parsedJackFiles -> return parsedJackFiles
+                Left err              -> putStrLn (show err) >> return []
+            
         else putStrLn "Usage: JackCompiler.exe directory\n"
-             >> return [[]]
+             >> return []
 

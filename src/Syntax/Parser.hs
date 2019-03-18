@@ -13,6 +13,13 @@ type TokenParser a =
         TokenisedJackFile
     ->  Either (String, TokenisedJackFile) (a, TokenisedJackFile)
 
+parseJackClasses :: [TokenisedJackFile] -> Either (String, TokenisedJackFile) [JackClass]
+parseJackClasses [] = Right []
+parseJackClasses (c:cs) =
+    case parseJackClass c of
+        Right (res, _) -> (:) <$> Right res <*> parseJackClasses cs
+        Left  err -> Left err
+
 parseJackClass :: TokenParser JackClass
 parseJackClass ts =
         skipClass ts
@@ -27,9 +34,15 @@ parseJackClass ts =
     >>= \(srDecs, ts)
     ->  skipRCurlyBracket ts
     >>= \(_, ts)
+    ->  checkEndOfInput ts
+    >>= \(_, ts)
     ->  return (JackClass cName
                           cVarDecs
                           srDecs, ts)
+
+checkEndOfInput :: TokenParser ()
+checkEndOfInput [] = Right ((), [])
+checkEndOfInput ts = Left ("should be end of file", ts)
 
 parseClassVarDecs :: TokenParser [ClassVarDec]
 parseClassVarDecs ts =
