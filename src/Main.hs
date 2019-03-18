@@ -27,8 +27,8 @@ main = do
             jackFiles <- readJackFiles jackFileNames
             let tokenisedJackFiles = tokeniseJackFiles jackFiles
             case parseJackClasses tokenisedJackFiles of
-                Right parsedJackFiles -> return parsedJackFiles
-                Left err              -> putStrLn (show err) >> return []
+                Right parsedJackFiles -> print parsedJackFiles >> return parsedJackFiles
+                Left err              -> print err >> return []
             
         else putStrLn "Usage: JackCompiler.exe directory\n"
              >> return []
