@@ -23,6 +23,11 @@ take1Space =
         )
     <|> endOfLine
     <|> endOfInput
+    <|> (do
+        c <- peekChar'
+        if c == ';'
+            then return ()
+            else fail "expected semicolon")
 
 parseKeyword :: Parser Keyword
 parseKeyword =

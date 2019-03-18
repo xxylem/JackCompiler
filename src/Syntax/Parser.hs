@@ -94,8 +94,12 @@ parseSubroutineDec ts =
     >>= \(srType, ts)
     ->  parseSubroutineName ts
     >>= \(srName, ts)
+    ->  skipLParen ts
+    >>= \(_, ts)
     ->  parseParameters ts
     >>= \(params, ts)
+    ->  skipRParen ts
+    >>= \(_, ts)
     ->  parseSubroutineBody ts
     >>= \(body, ts)
     ->  return (SubroutineDec srKind
@@ -127,11 +131,12 @@ parseSubroutineType ts =
 
 parseParameters :: TokenParser [Parameter]
 parseParameters ts =
-        parseFirstParameter ts
-    >>= \(prm, ts)
-    ->  parseTailParameters ts
-    >>= \(prms, ts)
-    ->  return (prm:prms, ts)
+        case parseFirstParameter ts of
+            Right (prm, ts) ->  parseTailParameters ts
+                                        >>= \(prms, ts)
+                                        ->  return (prm:prms, ts)
+            Left _ -> return ([], ts)
+
 
 parseTailParameters :: TokenParser [Parameter]
 parseTailParameters ts =
@@ -163,6 +168,8 @@ parseSubroutineBody ts =
     >>= \(varDecs, ts)
     ->  parseStatements ts
     >>= \(stmts, ts)
+    ->  skipRCurlyBracket ts
+    >>= \(_, ts)
     ->  return (SubroutineBody varDecs stmts, ts)
 
 parseVarNameListOption :: TokenParser VarName
@@ -526,11 +533,11 @@ parseExpressionsOption ts =
 parseExpressionList :: TokenParser [Expression]
 parseExpressionList [] = Left ("expected input in parseExpressionList", [])
 parseExpressionList ts =
-        parseExpression ts
-    >>= \(expr, ts)
-    ->  parseExpressionsOption ts
-    >>= \(exprs, ts)
-    ->  return (expr:exprs, ts)
+        case parseExpression ts of Right (expr, ts) -> parseExpressionsOption ts
+                                                            >>= \(exprs, ts)
+                                                            ->  return (expr:exprs, ts)
+                                   Left _ -> Right ([], ts)
+    
     
 
 parseOp :: TokenParser Op
