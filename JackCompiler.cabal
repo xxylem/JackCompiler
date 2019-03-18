@@ -22,7 +22,7 @@ executable JackCompiler
                      , Data.AnalyserModel
                      , Data.TokenModel
                      , Syntax.Parser
-                     , Test.Parser
+                    --  , Test.Parser
   -- other-extensions:
   build-depends:       base >=4.11 && <4.12
                      , attoparsec >= 0.13 && < 1.0

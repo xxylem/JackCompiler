@@ -1,15 +1,17 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 module Syntax.Parser where
 
 import Data.TokenModel
 import Data.AnalyserModel
 
-import Control.Applicative ((<|>))
+import Control.Applicative
 import Data.Char (isUpper, isLower)
 import qualified Data.ByteString.Char8 as BS
 
 type TokenParser a =
         TokenisedJackFile
-    ->  Maybe (a, TokenisedJackFile)
+    ->  Either (String, TokenisedJackFile) (a, TokenisedJackFile)
 
 parseJackClass :: TokenParser JackClass
 parseJackClass ts =
@@ -32,10 +34,10 @@ parseJackClass ts =
 parseClassVarDecs :: TokenParser [ClassVarDec]
 parseClassVarDecs ts =
     case parseClassVarDec ts of
-        Just (cVarDec, ts) -> case parseClassVarDecs ts of
-                                Just (cVarDecs, ts') -> Just (cVarDec:cVarDecs, ts')
-                                Nothing              -> Just ([cVarDec], ts)
-        Nothing            -> Just ([], ts)
+        Right (cVarDec, ts) -> case parseClassVarDecs ts of
+                                Right (cVarDecs, ts') -> Right (cVarDec:cVarDecs, ts')
+                                Left _              -> Right ([cVarDec], ts)
+        Left _            -> Right ([], ts)
 
 parseClassVarDec :: TokenParser ClassVarDec
 parseClassVarDec ts =
@@ -79,10 +81,10 @@ parseJackType ts =
 parseSubroutineDecs :: TokenParser [SubroutineDec]
 parseSubroutineDecs ts =
     case parseSubroutineDec ts of
-        Just (srDec, ts) -> case parseSubroutineDecs ts of
-                                Just (srDecs, ts') -> Just (srDec:srDecs, ts')
-                                Nothing            -> Just ([srDec], ts)
-        Nothing          -> Just ([], ts)
+        Right (srDec, ts) -> case parseSubroutineDecs ts of
+                                Right (srDecs, ts') -> Right (srDec:srDecs, ts')
+                                Left _            -> Right ([srDec], ts)
+        Left _          -> Right ([], ts)
 
 parseSubroutineDec :: TokenParser SubroutineDec
 parseSubroutineDec ts =
@@ -120,8 +122,8 @@ parseSubroutineType ts =
         >>= \(_, ts)
         ->  return (VoidType, ts))
     <|> (case parseJackType ts of
-            Just (jType, ts) -> Just (SRType jType, ts)
-            Nothing          -> Nothing)
+            Right (jType, ts) -> Right (SRType jType, ts)
+            Left (err, errTkns)          -> Left (err <> " parseSubroutineType ", errTkns))
 
 parseParameters :: TokenParser [Parameter]
 parseParameters ts =
@@ -134,10 +136,10 @@ parseParameters ts =
 parseTailParameters :: TokenParser [Parameter]
 parseTailParameters ts =
     case parseTailParameter ts of
-        Just (prm, ts) -> case parseTailParameters ts of
-                            Just (prms, ts') -> Just (prm:prms, ts')
-                            Nothing          -> Just ([prm], ts)
-        Nothing        -> Just ([], ts)
+        Right (prm, ts) -> case parseTailParameters ts of
+                            Right (prms, ts') -> Right (prm:prms, ts')
+                            Left _          -> Right ([prm], ts)
+        Left _        -> Right ([], ts)
 
 parseTailParameter :: TokenParser Parameter
 parseTailParameter ts =
@@ -172,10 +174,10 @@ parseVarNameListOption ts =
 parseVarNameListOptions :: TokenParser [VarName]
 parseVarNameListOptions ts =
         case parseVarNameListOption ts of
-            Just (name, ts) -> case parseVarNameListOptions ts of
-                                    Just (names, ts') -> Just (name:names, ts')
-                                    Nothing           -> Just ([name], ts)
-            Nothing         -> Just ([], ts)
+            Right (name, ts) -> case parseVarNameListOptions ts of
+                                    Right (names, ts') -> Right (name:names, ts')
+                                    Left _           -> Right ([name], ts)
+            Left _         -> Right ([], ts)
 
 parseVarNameList :: TokenParser [VarName]
 parseVarNameList ts =
@@ -188,10 +190,10 @@ parseVarNameList ts =
 parseVarDecs :: TokenParser [VarDec]
 parseVarDecs ts =
         case parseVarDec ts of
-            Just (varDec, ts) -> case parseVarDecs ts of
-                                    Just (varDecs, ts') -> Just (varDec:varDecs, ts')
-                                    Nothing             -> Just ([varDec], ts)
-            Nothing           -> Just ([], ts)
+            Right (varDec, ts) -> case parseVarDecs ts of
+                                    Right (varDecs, ts') -> Right (varDec:varDecs, ts')
+                                    Left _             -> Right ([varDec], ts)
+            Left _           -> Right ([], ts)
 
 parseVarDec :: TokenParser VarDec
 parseVarDec ts =
@@ -208,10 +210,10 @@ parseVarDec ts =
 parseStatements :: TokenParser [Statement]
 parseStatements ts =
     case parseStatement ts of
-        Just (stmt, ts) -> case parseStatements ts of
-                                Just (stmts, ts') -> Just (stmt:stmts, ts')
-                                Nothing           -> Just ([stmt], ts)
-        Nothing -> Just ([], ts)
+        Right (stmt, ts) -> case parseStatements ts of
+                                Right (stmts, ts') -> Right (stmt:stmts, ts')
+                                Left _           -> Right ([stmt], ts)
+        Left _ -> Right ([], ts)
 
 parseStatement :: TokenParser Statement
 parseStatement ts =
@@ -224,9 +226,9 @@ parseStatement ts =
 parseLetStatementName :: TokenParser LetStatementName
 parseLetStatementName ts =
         (   parseEArrayExp ts
-        >>= \(arr, ts) -> Just (LSA arr, ts))
+        >>= \(arr, ts) -> Right (LSA arr, ts))
     <|> (   parseVarName ts
-        >>= \(varName, ts) -> Just (LSV varName, ts) )
+        >>= \(varName, ts) -> Right (LSV varName, ts) )
 
 parseLetStatement :: TokenParser Statement
 parseLetStatement ts =
@@ -310,8 +312,8 @@ parseReturnStatement ts =
         skipReturn ts
     >>= \(_, ts)
     ->  case parseExpression ts of
-            Just (expr, ts') -> Just (ReturnStatement (Just expr), ts')
-            Nothing          -> Just (ReturnStatement Nothing, ts)
+            Right (expr, ts') -> Right (ReturnStatement (Just expr), ts')
+            Left _          -> Right (ReturnStatement Nothing, ts)
     >>= \(retStatement, ts)
     ->  skipSemicolon ts
     >>= \(_, ts)
@@ -335,8 +337,13 @@ parseTermOpTermExp ts =
 parseSingleTermExp :: TokenParser Expression
 parseSingleTermExp ts =
     case parseTerm ts of
-        Just (res, ts) -> Just (ESingleTerm res, ts)
-        Nothing        -> Nothing
+        Right (res, ts) -> Right (ESingleTerm res, ts)
+        Left (err, errTkns)        -> Left (err <> " parseSingleTermExp ", errTkns)
+
+instance Alternative (Either (String, TokenisedJackFile)) where
+    Right res <|> _ = Right res
+    Left _    <|> Right res = Right res
+    Left (err, errTkns)  <|> Left (err', _) = Left (err <> " + " <> err', errTkns)
 
 parseTerm :: TokenParser Term
 parseTerm ts =
@@ -350,46 +357,48 @@ parseTerm ts =
     <|> parseVarNameTerm ts
 
 parseIntegerConstant :: TokenParser Term
-parseIntegerConstant [] = Nothing
+parseIntegerConstant [] = Left ("expected input in parseIntegerConstant", [])
 parseIntegerConstant (t:ts) =
     case t of
-        (IC i) -> Just (TIntegerConstant i, ts)
-        _      -> Nothing
+        (IC i) -> Right (TIntegerConstant i, ts)
+        _      -> Left ("failed parse in parseIntegerConstant", t:ts)
 
 parseStringConstant :: TokenParser Term
-parseStringConstant [] = Nothing
+parseStringConstant [] = Left ("expected input in parseStringConstant", [])
 parseStringConstant (t:ts) =
     case t of
-        (SC s) -> Just (TStringConstant s, ts)
-        _      -> Nothing
+        (SC s) -> Right (TStringConstant s, ts)
+        _      -> Left ("failed parse in parseIntegerConstant", t:ts)
 
 parseEKeywordConstant :: TokenParser EKeywordConstant
-parseEKeywordConstant [] = Nothing
+parseEKeywordConstant [] = Left ("expected input in parseEKeywordConstant", [])
 parseEKeywordConstant (t:ts) =
     case t of
-        (KW TrueKW)     -> Just (EKConTrue, ts)
-        (KW FalseKW)    -> Just (EKConFalse, ts)
-        (KW Null)       -> Just (EKConNull, ts)
-        (KW This)       -> Just (EKConThis, ts)
-        _               -> Nothing
+        (KW TrueKW)     -> Right (EKConTrue, ts)
+        (KW FalseKW)    -> Right (EKConFalse, ts)
+        (KW Null)       -> Right (EKConNull, ts)
+        (KW This)       -> Right (EKConThis, ts)
+        _               -> Left ("failed parse in parseEKeywordConstant", t:ts)
 
 parseKeywordConstantTerm :: TokenParser Term
 parseKeywordConstantTerm ts =
     case parseEKeywordConstant ts of
-        Just (res, ts) -> Just (TKeywordConstant res, ts)
-        Nothing        -> Nothing
+        Right (res, ts) -> Right (TKeywordConstant res, ts)
+        Left (err, errTkns)        -> Left (err <> " parseKeywordConstantTerm ", errTkns)
 
 parseVarName :: TokenParser VarName
-parseVarName [] = Nothing
+parseVarName [] = Left ("expected input in parseVarName", [])
 parseVarName (t:ts) =
     case t of
-        (ID name) -> if isLower $ BS.head name then Just (VarName name, ts) else Nothing
-        _               -> Nothing
+        (ID name) -> if isLower $ BS.head name 
+                        then Right (VarName name, ts) 
+                        else Left ("failed parse in parseVarName", t:ts)
+        _               -> Left ("failed parse in parseVarName", t:ts)
 
 parseVarNameTerm :: TokenParser Term
 parseVarNameTerm ts = case parseVarName ts of
-    Just (varName, ts) -> Just (TVarName varName, ts)
-    Nothing            -> Nothing
+    Right (varName, ts) -> Right (TVarName varName, ts)
+    Left (err, errTkns)            -> Left (err <> " parseVarNameTerm ", errTkns)
 
 parseEArrayExp :: TokenParser EArrayExp --todo create state, maybe monad comb.
 parseEArrayExp ts = 
@@ -406,22 +415,26 @@ parseEArrayExp ts =
 parseArrayExpTerm :: TokenParser Term
 parseArrayExpTerm ts =
     case parseEArrayExp ts of
-        Just (res, ts) -> Just (TArrayExp res, ts)
-        Nothing        -> Nothing
+        Right (res, ts) -> Right (TArrayExp res, ts)
+        Left (err, errTkns)        -> Left (err <> " parseArrayExpTerm ", errTkns)
 
 parseSubroutineName :: TokenParser SubroutineName
-parseSubroutineName [] = Nothing
+parseSubroutineName [] = Left ("expected input in parseSubroutineName", [])
 parseSubroutineName (t:ts) =
     case t of
-        (ID i) -> if isLower $ BS.head i then Just (SubroutineName i, ts) else Nothing
-        _            -> Nothing
+        (ID i) -> if isLower $ BS.head i 
+                    then Right (SubroutineName i, ts) 
+                    else Left ("failed parse in parseSubroutineName", t:ts)
+        _            -> Left ("failed parse in parseSubroutineName", t:ts)
 
 parseClassName :: TokenParser ClassName
-parseClassName [] = Nothing
+parseClassName [] = Left ("expected input in parseClassName", [])
 parseClassName (t:ts) =
     case t of
-        (ID i) -> if isUpper $ BS.head i then Just (ClassName i, ts) else Nothing
-        _            -> Nothing
+        (ID i) -> if isUpper $ BS.head i 
+                    then Right (ClassName i, ts) 
+                    else Left ("failed parse in parseClassName", t:ts)
+        _            -> Left ("failed parse in parseClassName", t:ts)
 
 parseSubroutineCallSimple :: TokenParser SubroutineCall
 parseSubroutineCallSimple ts =
@@ -472,18 +485,18 @@ parseSubroutineCallVar ts =
 parseSubroutineCall :: TokenParser SubroutineCall
 parseSubroutineCall ts =
         case parseSubroutineCallClass ts of
-            Just res -> Just res
-            Nothing -> case parseSubroutineCallVar ts of
-                Just res -> Just res
-                Nothing -> case parseSubroutineCallSimple ts of
-                    Just res -> Just res
-                    Nothing -> Nothing
+            Right res -> Right res
+            Left _ -> case parseSubroutineCallVar ts of
+                Right res -> Right res
+                Left _ -> case parseSubroutineCallSimple ts of
+                    Right res -> Right res
+                    Left _ -> Left ("failed parse in parseSubroutineCall", ts)
 
 parseSubroutineCallTerm :: TokenParser Term
 parseSubroutineCallTerm ts =
     case parseSubroutineCall ts of
-        Just (res, ts) -> Just (TSubroutineCall res, ts)
-        Nothing        -> Nothing
+        Right (res, ts) -> Right (TSubroutineCall res, ts)
+        Left (err, errTkns)        -> Left (err <> " parseSubroutineCallTerm ", errTkns)
 
 
 parseParenExpression :: TokenParser Term
@@ -497,21 +510,21 @@ parseParenExpression ts =
     ->  return (TParenExpression expr, ts)
 
 parseExpressionOption :: TokenParser Expression
-parseExpressionOption [] = Nothing
+parseExpressionOption [] = Left ("expected input in parseExpressionOption", [])
 parseExpressionOption ts =
     case skipComma ts of
-        Just (_, ts) -> parseExpression ts
-        Nothing      -> Nothing
+        Right (_, ts) -> parseExpression ts
+        Left (err, errTkns)      -> Left (err <> " parseExpressionOption ", errTkns)
 
 parseExpressionsOption :: TokenParser [Expression]
 parseExpressionsOption ts =
     case parseExpressionOption ts of
-        Just (expr, ts) -> case parseExpressionsOption ts of
-                            Just (rsf, ts') -> Just (expr:rsf, ts')
-        Nothing         -> Just ([], ts)
+        Right (expr, ts) -> case parseExpressionsOption ts of
+                            Right (rsf, ts') -> Right (expr:rsf, ts')
+        Left _         -> Right ([], ts)
 
 parseExpressionList :: TokenParser [Expression]
-parseExpressionList [] = Nothing
+parseExpressionList [] = Left ("expected input in parseExpressionList", [])
 parseExpressionList ts =
         parseExpression ts
     >>= \(expr, ts)
@@ -521,27 +534,27 @@ parseExpressionList ts =
     
 
 parseOp :: TokenParser Op
-parseOp [] = Nothing
+parseOp [] = Left ("expected input in parseOp", [])
 parseOp (t:ts) =
     case t of
-        (SY Plus)           -> Just (OpPlus, ts)
-        (SY Minus)          -> Just (OpMinus, ts)
-        (SY Asterix)        -> Just (OpMultiply, ts)
-        (SY Slash)          -> Just (OpDivide, ts)
-        (SY Ampersand)      -> Just (OpAnd, ts)
-        (SY VerticalBar)    -> Just (OpOr, ts)
-        (SY LAngleBracket)  -> Just (OpLT, ts)
-        (SY RAngleBracket)  -> Just (OpGT, ts)
-        (SY Equal)          -> Just (OpEqual, ts)
-        _                   -> Nothing
+        (SY Plus)           -> Right (OpPlus, ts)
+        (SY Minus)          -> Right (OpMinus, ts)
+        (SY Asterix)        -> Right (OpMultiply, ts)
+        (SY Slash)          -> Right (OpDivide, ts)
+        (SY Ampersand)      -> Right (OpAnd, ts)
+        (SY VerticalBar)    -> Right (OpOr, ts)
+        (SY LAngleBracket)  -> Right (OpLT, ts)
+        (SY RAngleBracket)  -> Right (OpGT, ts)
+        (SY Equal)          -> Right (OpEqual, ts)
+        _                   -> Left ("failed parse in parseOp", ts)
 
 parseUnaryOp :: TokenParser UnaryOp
-parseUnaryOp [] = Nothing
+parseUnaryOp [] = Left ("expected input in parseUnaryOp", [])
 parseUnaryOp (t:ts) =
     case t of
-        (SY Minus) -> Just (UOPArithNegation, ts)
-        (SY Tilde) -> Just (UOPBitNegation, ts)
-        _          -> Nothing
+        (SY Minus) -> Right (UOPArithNegation, ts)
+        (SY Tilde) -> Right (UOPBitNegation, ts)
+        _          -> Left ("failed parse in parseUnaryOp", ts)
 
 parseUnaryOpTerm :: TokenParser Term
 parseUnaryOpTerm ts =
@@ -556,10 +569,16 @@ parseUnaryOpTerm ts =
 -- ======================= --
 
 skipToken :: Token -> TokenParser ()
-skipToken _ [] = Nothing
+skipToken _ [] = Left ("expected input in skipToken", [])
 skipToken tkn (t:ts) =
-    if tkn == t then Just ((), ts)
-                else Nothing
+    if tkn == t then Right ((), ts)
+                else Left ("failed parse in skipToken. "
+                            <> "expected: "
+                            <> show tkn
+                            <> "\n"
+                            <> "got: "
+                            <> show t
+                            <> "\n", t:ts)
 
 skipVoid :: TokenParser ()
 skipVoid =
