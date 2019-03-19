@@ -2,6 +2,8 @@ module Data.AnalyserModel where
 
 import qualified Data.ByteString.Char8 as BS
 
+type JackClassWithPath = (JackClass, FilePath)
+
 data JackClass =
     JackClass ClassName
               [ClassVarDec]

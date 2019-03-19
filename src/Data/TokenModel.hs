@@ -62,3 +62,6 @@ data Token =
 
 type JackFile = BS.ByteString
 type TokenisedJackFile = [Token]
+
+type JackFileWithPath = (JackFile, FilePath)
+type TokenisedJackFileWithPath = (TokenisedJackFile, FilePath)

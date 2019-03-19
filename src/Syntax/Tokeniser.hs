@@ -12,6 +12,13 @@ import qualified Data.ByteString.Char8 as BS
 
 import Prelude hiding (takeWhile)
 
+identifierCharacters :: [Char]
+identifierCharacters =
+        '_'
+    :   ['a'..'z']
+    <>  ['A'..'Z']
+    <>  ['0'..'9']
+
 take1Space :: Parser ()
 take1Space =    
         (
@@ -25,9 +32,9 @@ take1Space =
     <|> endOfInput
     <|> (do
         c <- peekChar'
-        if c == ';'
+        if c `notElem` identifierCharacters
             then return ()
-            else fail "expected semicolon")
+            else fail "expected non-identifier character")
 
 parseKeyword :: Parser Keyword
 parseKeyword =
@@ -145,10 +152,10 @@ parseTokens = manyTill parseToken endOfInput
 tokeniseJackFile :: JackFile -> Either String TokenisedJackFile
 tokeniseJackFile = parseOnly parseTokens
 
-tokeniseJackFiles :: [JackFile] -> [TokenisedJackFile]
+tokeniseJackFiles :: [JackFileWithPath] -> [TokenisedJackFileWithPath]
 tokeniseJackFiles [] = []
-tokeniseJackFiles (f:fs) =
-    case tokeniseJackFile f of
-        Right parsedFile -> parsedFile : tokeniseJackFiles fs
+tokeniseJackFiles ((file, path):fs) =
+    case tokeniseJackFile file of
+        Right parsedFile -> (parsedFile, path) : tokeniseJackFiles fs
         Left  _          -> tokeniseJackFiles fs
 

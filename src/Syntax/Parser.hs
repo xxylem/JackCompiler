@@ -13,12 +13,18 @@ type TokenParser a =
         TokenisedJackFile
     ->  Either (String, TokenisedJackFile) (a, TokenisedJackFile)
 
-parseJackClasses :: [TokenisedJackFile] -> Either (String, TokenisedJackFile) [JackClass]
-parseJackClasses [] = Right []
-parseJackClasses (c:cs) =
-    case parseJackClass c of
-        Right (res, _) -> (:) <$> Right res <*> parseJackClasses cs
-        Left  err -> Left err
+runParseJackClasses :: [TokenisedJackFileWithPath] -> Either (String, TokenisedJackFile) [JackClassWithPath]
+runParseJackClasses [] = Right []
+runParseJackClasses ((file, path):fs) = do
+    jackClass <- runParseJackClass file
+    jackClasses <- runParseJackClasses fs
+    return ((jackClass, path):jackClasses)
+
+runParseJackClass :: TokenisedJackFile -> Either (String, TokenisedJackFile) JackClass
+runParseJackClass f =
+        parseJackClass f
+    >>= \(jackClass, _)
+    ->  return jackClass
 
 parseJackClass :: TokenParser JackClass
 parseJackClass ts =
