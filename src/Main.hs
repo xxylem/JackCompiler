@@ -7,6 +7,7 @@ import Data.TokenModel
 import Syntax.Tokeniser
 import Syntax.Parser
 import Compilation.TokensXMLWriter
+import Compilation.JackClassXMLWriter
 
 import qualified Data.ByteString.Char8 as BS
 import ReadArgs (readArgs)
@@ -29,10 +30,11 @@ main = do
             let jackFileNames = map (path </>) $ filter (".jack" `isExtensionOf`) dirContents
             jackFiles <- readJackFiles jackFileNames
             let tokenisedJackFiles = tokeniseJackFiles jackFiles
-            -- case runParseJackClasses tokenisedJackFiles of
-            --     Right parsedJackFiles -> print parsedJackFiles >> return parsedJackFiles
-            --     Left err              -> print err >> return []
             writeTokenisedJackFilesXML tokenisedJackFiles
+            case runParseJackClasses tokenisedJackFiles of
+                Right parsedJackFiles -> writeJackClassesXML parsedJackFiles
+                Left err              -> print err
+            
             
         else putStrLn "Usage: JackCompiler.exe directory\n"
 
