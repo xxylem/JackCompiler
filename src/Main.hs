@@ -9,6 +9,8 @@ import Syntax.Parser
 import Compilation.TokensXMLWriter
 import Compilation.JackClassXMLWriter
 
+import Data.Hack.ASM.ConversionTo.ByteString
+
 import qualified Data.ByteString.Char8 as BS
 import ReadArgs (readArgs)
 import System.Directory (listDirectory)
