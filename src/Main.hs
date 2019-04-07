@@ -2,16 +2,11 @@
 
 module Main where
 
--- import Data.AnalyserModel
--- import Data.TokenModel
--- import Syntax.Tokeniser
--- import Syntax.Parser
--- import Compilation.TokensXMLWriter
--- import Compilation.JackClassXMLWriter
-
 import qualified Data.Source.Model as SRC
 import qualified Data.Output.Model as OUT
 import qualified Data.Jack.Token.ConversionTo.ByteString.XML as TK2XML
+import qualified Data.Jack.Token.ConversionTo.JackClass as TK2JC
+import qualified Data.Jack.Class.ConversionTo.ByteString.XML as JC2XML
 import qualified Parser.Token as PT
 
 import qualified Data.ByteString.Char8 as BS
@@ -34,17 +29,15 @@ main = do
             dirContents <- listDirectory path
             let jackFileNames = map (path </>) $ filter (".jack" `isExtensionOf`) dirContents
             unparsedBSFiles <- readJackFiles jackFileNames
-            let result = PT.tokeniseFiles unparsedBSFiles
-            case result of
-                Right tokenisedFiles ->
+            case PT.tokeniseFiles unparsedBSFiles of
+                Right tokenisedFiles -> do
                     (OUT.writeOutputFiles . TK2XML.convertDirectory) tokenisedFiles
+                    case TK2JC.convertDirectory tokenisedFiles of
+                        Right parsedJackFiles -> 
+                            (OUT.writeOutputFiles . JC2XML.convertDirectory) parsedJackFiles
+                        Left err -> print err
                 Left err -> print err
-    --         writeTokenisedJackFilesXML tokenisedJackFiles
-    --         case runParseJackClasses tokenisedJackFiles of
-    --             Right parsedJackFiles -> writeJackClassesXML parsedJackFiles
-    --             Left err              -> print err
-            
-            
+
         else putStrLn "Usage: JackCompiler.exe directory\n"
     return ()
 
