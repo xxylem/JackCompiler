@@ -4,9 +4,13 @@ module Main where
 
 import qualified Data.Source.Model as SRC
 import qualified Data.Output.Model as OUT
+
 import qualified Data.Jack.Token.ConversionTo.ByteString.XML as TK2XML
 import qualified Data.Jack.Token.ConversionTo.JackClass as TK2JC
 import qualified Data.Jack.Class.ConversionTo.ByteString.XML as JC2XML
+import qualified Data.Jack.Class.ConversionTo.VMCode as JC2VM
+import qualified Data.VM.ConversionTo.ByteString as VM2BS
+
 import qualified Parser.Token as PT
 
 import qualified Data.ByteString.Char8 as BS
@@ -33,11 +37,14 @@ main = do
                 Right tokenisedFiles -> do
                     (OUT.writeOutputFiles . TK2XML.convertDirectory) tokenisedFiles
                     case TK2JC.convertDirectory tokenisedFiles of
-                        Right parsedJackFiles -> 
+                        Right parsedJackFiles -> do
                             (OUT.writeOutputFiles . JC2XML.convertDirectory) parsedJackFiles
+                            (OUT.writeOutputFiles
+                                . VM2BS.convertDirectory
+                                . JC2VM.convertDirectory) parsedJackFiles
                         Left err -> print err
                 Left err -> print err
 
-        else putStrLn "Usage: JackCompiler.exe directory\n"
+        else putStrLn "Usage: JackCompiler.exe directory\n" --todo, can be a single .jack file
     return ()
 
